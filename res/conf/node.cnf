@@ -1,0 +1,28 @@
+[ req ]
+default_bits            = 4096                    # RSA key size
+encrypt_key             = yes                     # Protect private key
+default_md              = sha256                  # MD to use
+utf8                    = yes                     # Input is UTF-8
+string_mask             = utf8only                # Emit UTF-8 strings
+prompt                  = yes                     # Prompt for DN
+distinguished_name      = req_distinguished_name  # DN template
+#req_extensions          = super_cert              # Desired extensions
+
+[ req_distinguished_name ]
+# See <https://en.wikipedia.org/wiki/Certificate_signing_request>.
+domainComponent                 = Domain Component (eg, company.com)
+countryName                     = Country Name (2 letter code)
+stateOrProvinceName             = State or Province Name (full name)
+localityName                    = Locality Name (eg, city)
+0.organizationName              = Organization Name (eg, company)
+organizationalUnitName          = Unit Name (eg, section)
+commonName                      = Common Name (eg, server)
+emailAddress                    = Email
+
+# Optionally, specify some defaults.
+countryName_default             = FR
+stateOrProvinceName_default     = IdF
+localityName_default            = Paris
+0.organizationName_default      = ValhallaCorp
+organizationalUnitName_default  = EasySSL
+#emailAddress_default           = easyssl@valhalla-corp.com

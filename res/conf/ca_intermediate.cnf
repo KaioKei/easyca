@@ -1,0 +1,130 @@
+# Simple Root CA
+
+# The [default] section contains global constants that can be referred to from
+# the entire configuration file. It may also hold settings pertaining to more
+# than one openssl command.
+
+[ default ]
+ca                      = {{ca_name}}               # CA name
+dir                     = {{dir}}               # Top dir
+certs                   = $dir/certs            # certs dir
+private                 = $dir/private          # private keys dir
+
+# The next part of the configuration file is used by the openssl req command.
+# It defines the CA's key pair, its DN, and the desired extensions for the CA
+# certificate.
+
+[ req ]
+# Options for the `req` tool (`man req`).
+default_bits        = 4096
+utf8                = yes
+prompt              = no
+string_mask         = utf8only
+default_md          = sha256
+distinguished_name  = ca_intermediate_dn
+x509_extensions     = super_cert
+
+[ ca_intermediate_dn ]
+domainComponent                 = Domain Component (eg, company.com)
+countryName                     = Country Name (2 letter code)
+stateOrProvinceName             = State or Province Name (full name)
+localityName                    = Locality Name (eg, city)
+0.organizationName              = Organization Name (eg, company)
+organizationalUnitName          = Unit Name (eg, section)
+commonName                      = Common Name (eg, server)
+emailAddress                    = Email
+
+# Optionally, specify some defaults.
+countryName_default             = FR
+stateOrProvinceName_default     = IdF
+localityName_default            = Paris
+0.organizationName_default      = EasySSL
+organizationalUnitName_default  = ValhallaCorp
+emailAddress_default            = easyssl@valhalla.com
+
+# The remainder of the configuration file is used by the openssl ca command.
+# The CA section defines the locations of CA assets, as well as the policies
+# applying to the CA.
+
+[ ca ]
+# `man ca`
+default_ca = ca_intermediate
+
+[ ca_intermediate ]
+certificate             = $certs/$ca.crt            # The CA cert
+new_certs_dir           = $certs                    # Certificate archive
+private_key             = $private/$ca.p8           # CA private key
+serial                  = $dir/serial               # Serial number file
+crl_dir		            = $dir/crl
+crlnumber               = $dir/crlnumber
+crl                     = $dir/crl/ca.crl.pem
+default_crl_days        = 30
+database                = $dir/index.txt            # Index file
+RANDFILE                = $dir/private/.rand
+unique_subject          = no                        # Require unique subject
+default_days            = 365                       # How long to certify for
+default_md              = sha256                    # MD to use
+email_in_dn             = no                        # Add email to cert DN
+preserve                = no                        # Keep passed DN ordering
+name_opt                = ca_default                # Subject DN display options
+cert_opt                = ca_default                # Certificate display options
+copy_extensions         = none                      # Copy extensions from CSR
+default_crl_days        = 365                       # How long before next CRL
+crl_extensions          = crl_ext                   # CRL extensions
+policy                  = policy_strict             # Default naming policy
+x509_extensions         = super_cert       # Default cert extensions
+
+# Naming policies control which parts of a DN end up in the certificate and
+# under what circumstances certification should be denied.
+
+[ policy_strict ]
+domainComponent         = match                 # Must match 'simple.org'
+organizationName        = match                 # Must match 'Simple Inc'
+organizationalUnitName  = optional              # Included if present
+commonName              = supplied              # Must be present
+
+# Certificate extensions define what types of certificates the CA is able to
+# create.
+# So, it MUST configure the extension of the certificates signed by this CA (including its own for the
+# root CA since it is self-signed)
+
+[ crl_ext ]
+authorityKeyIdentifier  = keyid:always
+
+[ client_cert ]
+# Extensions for client certificates (`man x509v3_config`).
+basicConstraints = critical,CA:FALSE
+nsCertType = client
+nsComment = "OpenSSL Generated Client Certificate"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid, issuer:always
+keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth
+subjectAltName = @alt_names
+
+[ server_cert ]
+# Extensions for server certificates (`man x509v3_config`).
+basicConstraints = critical,CA:FALSE
+nsCertType = server
+nsComment = "OpenSSL Generated Server Certificate"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid, issuer:always
+keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[ super_cert ]
+# Extensions for server certificates (`man x509v3_config`).
+basicConstraints = critical,CA:FALSE
+nsCertType = server, client
+nsComment = "OpenSSL Generated Server and Client Certificate"
+subjectKeyIdentifier = hash
+#authorityKeyIdentifier = keyid, issuer:always
+keyUsage = critical, digitalSignature, keyEncipherment, nonRepudiation
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = localhost
+IP.1 = 127.0.0.1
+#{{more_san}}
