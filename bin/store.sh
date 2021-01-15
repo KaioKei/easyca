@@ -23,6 +23,7 @@ arg_key="None"
 arg_ca_file="None"
 arg_out_dir="/tmp"
 arg_alias="None"
+arg_pass="None"
 
 # vars
 alias_cert="certificate"
@@ -78,7 +79,7 @@ function usage(){
 # arg3: alias of the cert
 # arg4: password of the store
 function importCA() {
-    yes | keytool -import -trustcacerts -file "$1" -keystore "$2" -storetype jks -storepass "$4" -alias "$3" >/dev/null 2>&1
+    yes | keytool -import -trustcacerts -file "$1" -keystore "$2" -storetype jks -storepass "$4" -alias "$3" > /dev/null 2>&1
     printf ". CA file %s imported in %s as %s\n" "$(basename -- "$1")" "$2" "$3"
 }
 
@@ -172,6 +173,10 @@ do
       arg_out_dir="$2"
       shift 2
       ;;
+    --pass)
+      arg_pass="$2"
+      shift 2
+      ;;
     *)    # unknown option
       POSITIONAL+=("$1") # save it in an array for later
       shift # past argument
@@ -181,7 +186,11 @@ done
 set -- "${POSITIONAL[@]}" # restore positional parameters
 
 # === PROGRAM ===
-read -r -s -p "Enter stores password: " password
+if [ "${arg_pass}" != "None" ]; then
+    password="${arg_pass}"
+else
+    read -r -s -p "Enter stores password: " password
+fi
 printf "\n\n"
 
 # define alias
