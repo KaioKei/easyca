@@ -53,16 +53,23 @@ function extract(){
   tree "${extract_dir}" -L 1
 }
 
+# add one or multiple certificates to trust inside a ca file
+# if the ca file does not exists, it is created with the provided cert
+# else the certificates are simply concatenated at the top of the ca file, keeping the order as they are provided
+# arg1: absolute path to the ca file
+# arg@:2 : certificates to trust
 trust(){
-  cacert="$3"
-  cacert_dir="$(dirname $cacert)"
-  certs="${@:4}"
-  printf ". Create CA backup in ${cacert}.backup\n"
-  cp $cacert ${cacert}.backup
-  cat $certs ${cacert}.backup > $cacert 
-  printf ". New CA in ${cacert}\n"
+  ca_file="$1"
+  if [ ! -f "${ca_file}" ]; then
+      touch "${ca_file}"
+  fi
+  # shellcheck disable=SC2124
+  certs=${@:2}
+  cp "${ca_file}" "${ca_file}.backup"
+  # do not double quote 'certs' to preserve array
+  cat ${certs} "${ca_file}.backup" > "${ca_file}"
+  printf ". CA file updated in %s\n" "${ca_file}"
 }
-
 
 
 # === PARSING ===
@@ -78,6 +85,10 @@ do
       ;;
     --extract)
       extract "$2"
+      exit 0
+      ;;
+    --trust)
+      trust "${@:2}"
       exit 0
       ;;
     *)    # unknown option
