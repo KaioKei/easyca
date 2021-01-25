@@ -1,7 +1,10 @@
-self_signed*
-chain*
-extract*
 **1598**
-chains/**
-.chains
 .idea
+
+extract*
+chains
+chain*
+.chains
+platforms
+
+log

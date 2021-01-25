@@ -255,7 +255,7 @@ function makeNode() {
     # if the key must be signed by a provided ca with an absolute path as argument
     yes yes | openssl ca -config "${issuer_conf}" -extensions "${cert_extension}" -days ${VALIDITY} -notext -md "${MD}" -in "${csr}" -out "${certificate}" >> "${logfile}" 2>&1
 
-    echo ". Create the intermediate CA chain file"
+    echo ". Create the CA file"
     cat "${certificate}" "${issuer_cert}" > "${ca_file}"
 }
 

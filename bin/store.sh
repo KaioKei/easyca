@@ -57,7 +57,7 @@ function usage(){
   --cert [path]\t\tUser certificate.
   --cafile [path]\tUser CA file. Optional. Default is None.
   --store [path]\tKeystore or truststore. Used by '--import' mode only.
-  --alias [name]\tName of the cert inside the stores. Optional. Default is 'certificate'.
+  --alias [name]\tName of the cert inside the stores and the stores name. Optional. Default is 'certificate'.
   --output [path]\tFolder path where the keystore and the truststore are generated. Optional. Default is '/tmp'.
 
   ${blu}Examples :${end}
@@ -110,23 +110,19 @@ function setAlias(){
 function keystore(){
     echo ". Create keystore"
     # create openssl keystore
-    keystore_p12="${arg_out_dir}/${KEYSTORE_P12_NAME}"
-    keystore_jks="${arg_out_dir}/${KEYSTORE_JKS_NAME}"
+    keystore_p12="${arg_out_dir}/${alias_cert}-${KEYSTORE_P12_NAME}"
+    keystore_jks="${arg_out_dir}/${alias_cert}-${KEYSTORE_JKS_NAME}"
     openssl pkcs12 -export -in "${arg_cert}" -inkey "${arg_key}" -name "${alias_cert}" -passout pass:${password} -out "${keystore_p12}"
     # create java keystore
     keytool -importkeystore -srckeystore "${keystore_p12}" -srcstoretype pkcs12 -srcstorepass "${password}" -destkeystore "${keystore_jks}" -deststoretype jks -deststorepass "${password}" >/dev/null 2>&1
-    if [ "${arg_ca_file}" != "None" ]; then
-        importCA "${arg_ca_file}" "${keystore_jks}" "${alias_ca}" "${password}"
-    fi
 }
 
 function truststore(){
     echo ". Create truststore"
-    truststore_jks="${arg_out_dir}/${TRUSTSTORE_NAME}"
+    truststore_jks="${arg_out_dir}/${alias_ca}-${TRUSTSTORE_NAME}"
     if [ "${arg_ca_file}" != "None" ]; then
         importCA "${arg_ca_file}" "${truststore_jks}" "${alias_ca}" "${password}"
     fi
-    import "${arg_cert}" "${truststore_jks}" "${alias_cert}" "${password}"
 }
 
 # === PARSING ===
@@ -175,6 +171,10 @@ do
       ;;
     --pass)
       arg_pass="$2"
+      shift 2
+      ;;
+    --intermediate)
+      arg_intermediate="$2"
       shift 2
       ;;
     *)    # unknown option
