@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 import argparse
-import shutil
-from pathlib import Path
-from typing import List, Dict, Pattern
-from enum import Enum
-import subprocess
+import calendar
 import os
 import re
+import shutil
+import subprocess
 import sys
-import calendar
 import time
+from enum import Enum
+from getpass import getpass
+from pathlib import Path
+from typing import List, Dict, Pattern
 
 TIMESTAMP = calendar.timegm(time.gmtime())
 # program dirs
@@ -39,7 +40,7 @@ KEYSTORE_KEY = "keystore"
 # inputs
 g_platform_servers: List[str]
 g_admin_servers: List[str]
-password = "secret123"
+g_password = "secret123"
 
 # globals
 g_ca_root_cert: str
@@ -55,8 +56,6 @@ g_ca_intermediate_dir: str
 #   }
 # }
 g_material_locations: Dict[str, Dict[str, str]] = {}
-server_certs: List[str] = []
-platform_dict: dict = {}
 
 
 # CLASS UTILS
@@ -81,7 +80,7 @@ class Material:
 
 
 class MaterialFactory(Material):
-    
+
     @staticmethod
     def get_private_key_material():
         return Material(Filetype.P8, "private")
@@ -197,12 +196,12 @@ def generate_truststore():
     import_ca_cmd: List[str] = [STORE_SCRIPT, "--import",
                                 "--cafile", g_ca_root_cert,
                                 "--store", TRUSTSTORE_LOCATION,
-                                "--pass", password]
+                                "--pass", g_password]
     execute(import_ca_cmd)
     import_ca_cmd: List[str] = [STORE_SCRIPT, "--import",
                                 "--cafile", g_ca_intermediate_cert,
                                 "--store", TRUSTSTORE_LOCATION,
-                                "--pass", password]
+                                "--pass", g_password]
     execute(import_ca_cmd)
 
 
@@ -240,7 +239,7 @@ def generate_keystores():
                                             "--cert", material_section.get(CERT_KEY),
                                             "--intermediate", g_ca_intermediate_cert,
                                             "--output", material_section.get(LOCATION_KEY),
-                                            "--pass", password]
+                                            "--pass", g_password]
         execute(generate_keystore_cmd)
         # save keystore location
         g_material_locations[material_name][KEYSTORE_KEY] = keystore_location
@@ -318,11 +317,22 @@ def main():
 
 if __name__ == "__main__":
     # parsing
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--servers', dest='servers', action='store', required=True,
-                        help='TLS material to generate per provided hostname')
-    parser.add_argument('--admin-servers', dest='admin_servers', action='store',
-                        help='TLS material to generate for an admin usage per provided hostname.')
+    parser = argparse.ArgumentParser(description='Generate TLS materials for a list of hosts. TLS material = private '
+                                                 'key, public key, CA file, keystore and truststore. The truststore and'
+                                                 ' the CA file are common to the entire platform while each private key'
+                                                 ', certificate and keystore are dedicated to one single server.')
+    parser.add_argument('-s,--servers', dest='servers', action='store', required=True,
+                        help='List of servers hostname. '
+                             'Each name will generate a set of TLS materials. '
+                             'The names MUST match the server\'s DNS resolution where the TLS material will be located.'
+                             ' Example: --servers node01,node02,node03')
+    parser.add_argument('-a,--admins', dest='admin_servers', action='store',
+                        help='List of additional servers hostname for an admin usage. '
+                             'Each name will generate a set of TLS materials. '
+                             'The names MUST match the server\'s DNS resolution where the TLS material will be located.'
+                             ' Example: --admin node01,node02,node03')
+    parser.add_argument('-p,--pass', dest='password', action='store',
+                        help='Password of the generated keystore and truststore for all hosts.')
     args = parser.parse_args()
 
     # init servers information
@@ -330,6 +340,12 @@ if __name__ == "__main__":
     g_admin_servers = []
     if args.admin_servers is not None:
         g_admin_servers = str(args.admin_servers).split(",")
+
+    # init password
+    if args.password is not None:
+        g_password = str(args.password)
+    else:
+        g_password = getpass("Enter keystore and truststore password: ")
 
     # main program
     init()
