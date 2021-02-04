@@ -39,7 +39,7 @@ arg_do_node="False"
 arg_extension="None"
 arg_issuer="None"
 arg_name="None"
-arg_san="localhost"
+arg_san="localhost,127.0.0.1"
 
 # shellcheck source=/dev/null
 source "${EASYSSL_DIR}/bin/utility.sh"
@@ -132,23 +132,23 @@ function configureNodeIssuer() {
 # params
 # arg1: openssl config file path
 function configureDNS() {
-    if [ "${arg_san}" != "localhost" ]; then
-        IFS=',' read -ra ADDR <<<"${arg_san}"
-        san_placeholder="#{{more_san}}"
-        count_san_ip=2
-        count_san_host=2
-        for i in "${ADDR[@]}"; do
-            if [[ $i =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-                # for ip address
-                sed -i "s+${san_placeholder}+IP\.${count_san_ip} = ${i}\n${san_placeholder}+g" "$1"
-                count_san_ip=$((count_san_ip + 1))
-            else
-                # for hostname
-                sed -i "s+${san_placeholder}+DNS\.${count_san_host} = ${i}\n${san_placeholder}+g" "$1"
-                count_san_host=$((count_san_host + 1))
-            fi
-        done
-    fi
+    # uncomment subjectAltName settings in issuer config file
+    sed -i -e "s+#subjectAltName = @alt_names+subjectAltName = @alt_names+g" "$1"
+    IFS=',' read -ra ADDR <<<"${arg_san}"
+    san_placeholder="#{{more_san}}"
+    count_san_ip=1
+    count_san_host=1
+    for i in "${ADDR[@]}"; do
+        if [[ $i =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+            # for ip address
+            sed -i "s+${san_placeholder}+IP\.${count_san_ip} = ${i}\n${san_placeholder}+g" "$1"
+            count_san_ip=$((count_san_ip + 1))
+        else
+            # for hostname
+            sed -i "s+${san_placeholder}+DNS\.${count_san_host} = ${i}\n${san_placeholder}+g" "$1"
+            count_san_host=$((count_san_host + 1))
+        fi
+    done
 }
 
 # Create the chain directory where all the files will be generated
@@ -208,7 +208,6 @@ function makeConfigure() {
 }
 
 function makeRoot() {
-    log_green "## MAKE CA ROOT ##"
     current_dir="${chain_dir}/${ca_root_name}"
     # shellcheck source=/dev/null
     source "${current_dir}/${ENVIRONMENT_CONF_NAME}"
@@ -233,12 +232,11 @@ function makeRoot() {
 # Create all the node or intermediate certificates
 # arg1 : name of the folder inside the chain dir (this is how this function will recognize and intermediate and a node type)
 function makeNode() {
-    log_green "## MAKE CERTS ##"
     current_dir="${chain_dir}/$1"
     # shellcheck source=/dev/null
     source "${current_dir}/${ENVIRONMENT_CONF_NAME}"
 
-    echo ". Create the intermediate CA private key"
+    echo ". Create the private key"
     temp_key="${current_dir}/private/temp.pem"
     openssl genrsa -out "${temp_key}" ${SIZE} >> "${logfile}" 2>&1
     openssl pkcs8 -topk8 -in "${temp_key}" -out "${private_key}" -nocrypt
@@ -250,7 +248,7 @@ function makeNode() {
     subject="/DC=${auto_DC}/C=${auto_C}/ST=${auto_ST}/L=${auto_L}/O=${auto_O}/OU=${auto_OU}/CN=${auto_CN}/emailAddress=${auto_email}"
     openssl req -new -config "${conf}" -sha256 -key "${private_key}" -out "${csr}" -subj "${subject}"
 
-    echo ". Create the intermediate CA certificate"
+    echo ". Create the certificate"
     # signing
     # if the key must be signed by a provided ca with an absolute path as argument
     yes yes | openssl ca -config "${issuer_conf}" -extensions "${cert_extension}" -days ${VALIDITY} -notext -md "${MD}" -in "${csr}" -out "${certificate}" >> "${logfile}" 2>&1
@@ -353,12 +351,14 @@ makeChainDir
 # if there is a provided issuer, ignore root and intermediate CA generation
 if [ "${arg_issuer}" == "None" ]; then
     if [ "${arg_do_root}" == "True" ]; then
+        log_green "## MAKE ROOT CA CERTS ##"
         makeChainFiles "ca_root.cnf" "${ca_root_name}"
         issuer_dir="${chain_dir}/${ca_root_name}"
         makeConfigure "${ca_root_name}" "${CAROOT_EXTENSION}" "${issuer_dir}" "${ca_root_name}.crt"
         makeRoot
     fi
     if [ "${arg_do_intermediate}" == "True" ]; then
+        log_green "## MAKE INTERMEDIATE CA CERTS ##"
         makeChainFiles "ca_intermediate.cnf" "${ca_intermediate_name}"
         issuer_dir="${chain_dir}/${ca_root_name}"
         makeConfigure "${ca_intermediate_name}" "${INTERMEDIATE_EXTENSION}" "${issuer_dir}" "ca_file.crt"
@@ -367,6 +367,7 @@ if [ "${arg_issuer}" == "None" ]; then
 fi
 
 if [ "${arg_do_node}" == "True" ]; then
+    log_green "## MAKE NODE CERTS ##"
     makeChainFiles "node.cnf" "${node_name}"
     configureNodeIssuer
     makeConfigure "${node_name}" "${arg_extension}" "${node_issuer_dir}" "ca_file.crt"
