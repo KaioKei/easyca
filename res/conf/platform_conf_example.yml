@@ -1,0 +1,15 @@
+platform:
+  password: "secret123"
+  material:
+    - host: server1
+      ip: 172.28.128.21
+    - host: server2
+      ip: 172.28.128.22
+      admin: true
+    - host: server3
+      ip: 172.28.128.23
+      admin: true
+    - host: server4
+      ip: 172.28.128.24
+    - host: server5
+      ip: 172.28.128.25

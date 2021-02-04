@@ -11,6 +11,7 @@ from enum import Enum
 from getpass import getpass
 from pathlib import Path
 from typing import List, Dict, Pattern
+import yaml
 
 TIMESTAMP = calendar.timegm(time.gmtime())
 # program dirs
@@ -36,11 +37,19 @@ LOCATION_KEY = "location"
 CERT_KEY = "cert"
 KEY_KEY = "key"
 KEYSTORE_KEY = "keystore"
+# platform configuration
+CONF_ROOT = "platform"
+CONF_PASSWORD = "password"
+CONF_MATERIAL = "material"
+CONF_HOST = "host"
+CONF_IP = "ip"
+CONF_ADMIN = "admin"
 
 # inputs
+g_conf_material: List[Dict[str, str]]
 g_platform_servers: List[str]
 g_admin_servers: List[str]
-g_password = "secret123"
+g_password: str
 
 # globals
 g_ca_root_cert: str
@@ -165,6 +174,10 @@ def get_material(root_dir: str, name: str, material: Material):
     return f"{root_dir}/{name}/{material.parent_dir}/{name}.{material.file_type}"
 
 
+def get_admin_name(basename: str):
+    return f"{ADMIN_ALIAS}-{basename}"
+
+
 # PLATFORM GENERATION #
 def generate_ca():
     ca_cmd: List[str] = [EASYSSL_SCRIPT, "--intermediate", "--name", CA_ALIAS]
@@ -205,16 +218,14 @@ def generate_truststore():
     execute(import_ca_cmd)
 
 
-def generate_certs(purpose: str, hosts: List[str], prefix: str = None):
-    for host in hosts:
-        name = host if prefix is None else f"{prefix}-{host}"
-        create_certs_cmd: List[str] = [EASYSSL_SCRIPT, f"--{purpose}",
-                                       "--name", name,
-                                       "--issuer", g_ca_intermediate_dir,
-                                       "--san", host]
-        execute(create_certs_cmd)
-        # store in global dictionary for further usage (import in truststore, extraction)
-        save_certs(name)
+def generate_certs(name: str, san: str):
+    create_certs_cmd: List[str] = [EASYSSL_SCRIPT, "--super",
+                                   "--name", name,
+                                   "--issuer", g_ca_intermediate_dir,
+                                   "--san", san]
+    execute(create_certs_cmd)
+    # store in global dictionary for further usage (import in truststore, extraction)
+    save_certs(name)
 
 
 def save_certs(name: str):
@@ -226,6 +237,16 @@ def save_certs(name: str):
     g_material_locations[name][LOCATION_KEY] = chain_dir
     g_material_locations[name][KEY_KEY] = key_location
     g_material_locations[name][CERT_KEY] = cert_location
+
+
+def generate_certs_wrapper():
+    for host_conf in g_conf_material:
+        name = host_conf.get(CONF_HOST)
+        san = f"{host_conf.get(CONF_HOST)},{host_conf.get(CONF_IP)}"
+        generate_certs(name, san)
+        # also generate admin if conf triggers it
+        if host_conf.get(CONF_ADMIN):
+            generate_certs(get_admin_name(host_conf.get(CONF_HOST)), san)
 
 
 def generate_keystores():
@@ -257,8 +278,9 @@ def trust_certs_ca():
 def extract():
     # ca in common dir
     shutil.copy(g_ca_intermediate_file, f"{PLATFORM_DIR}")
+    material_hosts = [material.get(CONF_HOST) for material in g_conf_material]
     # materials
-    for dir_name in g_platform_servers + g_admin_servers:
+    for dir_name in material_hosts:
         # create dirs
         dir_location: str = f"{PLATFORM_DIR}/{dir_name}"
         if not Path(dir_location).exists():
@@ -287,7 +309,20 @@ def init():
     print("OK")
 
 
-def main():
+def load_configuration(configuration_file: str):
+    global g_conf_material
+    global g_password
+    with open(configuration_file, 'r') as stream:
+        try:
+            conf = yaml.safe_load(stream).get(CONF_ROOT)
+            g_password = conf.get(CONF_PASSWORD)
+            g_conf_material = conf.get(CONF_MATERIAL)
+        except yaml.YAMLError as exc:
+            print(exc)
+            sys.exit(1)
+
+
+def launch():
     print_state(". Initialize CA ..")
     generate_ca()
     print("OK")
@@ -295,13 +330,8 @@ def main():
     generate_truststore()
     print("OK")
     print_state(". Generate platform certificates  ..")
-    generate_certs("super", g_platform_servers)
+    generate_certs_wrapper()
     print("OK")
-    if len(g_admin_servers) > 0:
-        print(g_admin_servers)
-        print_state(". Generate admin certificates ..")
-        generate_certs("super", g_admin_servers, "admin")
-        print("OK")
     print_state(". Generate keystores ..")
     generate_keystores()
     print("OK")
@@ -321,32 +351,11 @@ if __name__ == "__main__":
                                                  'key, public key, CA file, keystore and truststore. The truststore and'
                                                  ' the CA file are common to the entire platform while each private key'
                                                  ', certificate and keystore are dedicated to one single server.')
-    parser.add_argument('-s,--servers', dest='servers', action='store', required=True,
-                        help='List of servers hostname. '
-                             'Each name will generate a set of TLS materials. '
-                             'The names MUST match the server\'s DNS resolution where the TLS material will be located.'
-                             ' Example: --servers node01,node02,node03')
-    parser.add_argument('-a,--admins', dest='admin_servers', action='store',
-                        help='List of additional servers hostname for an admin usage. '
-                             'Each name will generate a set of TLS materials. '
-                             'The names MUST match the server\'s DNS resolution where the TLS material will be located.'
-                             ' Example: --admin node01,node02,node03')
-    parser.add_argument('-p,--pass', dest='password', action='store',
-                        help='Password of the generated keystore and truststore for all hosts.')
+    parser.add_argument('--conf', dest='configuration', action='store', required=True,
+                        help='Platform configuration file. Check "conf/platform_conf_example.yml"')
     args = parser.parse_args()
 
-    # init servers information
-    g_platform_servers = str(args.servers).split(",")
-    g_admin_servers = []
-    if args.admin_servers is not None:
-        g_admin_servers = str(args.admin_servers).split(",")
-
-    # init password
-    if args.password is not None:
-        g_password = str(args.password)
-    else:
-        g_password = getpass("Enter keystore and truststore password: ")
-
-    # main program
+    load_configuration(args.configuration)
+    # sys.exit(0)
     init()
-    main()
+    launch()
