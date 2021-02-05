@@ -25,4 +25,4 @@ stateOrProvinceName_default     = IdF
 localityName_default            = Paris
 0.organizationName_default      = ValhallaCorp
 organizationalUnitName_default  = EasySSL
-#emailAddress_default           = easyssl@valhalla-corp.com
+emailAddress_default            = easyssl@valhalla-corp.com

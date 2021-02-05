@@ -5,42 +5,10 @@
 # than one openssl command.
 
 [ default ]
-ca                      = {{ca_name}}               # CA name
+ca                      = {{ca_name}}           # CA name
 dir                     = {{dir}}               # Top dir
 certs                   = $dir/certs            # certs dir
 private                 = $dir/private          # private keys dir
-
-# The next part of the configuration file is used by the openssl req command.
-# It defines the CA's key pair, its DN, and the desired extensions for the CA
-# certificate.
-
-[ req ]
-# Options for the `req` tool (`man req`).
-default_bits        = 4096
-utf8                = yes
-prompt              = no
-string_mask         = utf8only
-default_md          = sha256
-distinguished_name  = ca_intermediate_dn
-x509_extensions     = super_cert
-
-[ ca_intermediate_dn ]
-domainComponent                 = Domain Component (eg, company.com)
-countryName                     = Country Name (2 letter code)
-stateOrProvinceName             = State or Province Name (full name)
-localityName                    = Locality Name (eg, city)
-0.organizationName              = Organization Name (eg, company)
-organizationalUnitName          = Unit Name (eg, section)
-commonName                      = Common Name (eg, server)
-emailAddress                    = Email
-
-# Optionally, specify some defaults.
-countryName_default             = FR
-stateOrProvinceName_default     = IdF
-localityName_default            = Paris
-0.organizationName_default      = EasySSL
-organizationalUnitName_default  = ValhallaCorp
-emailAddress_default            = easyssl@valhalla.com
 
 # The remainder of the configuration file is used by the openssl ca command.
 # The CA section defines the locations of CA assets, as well as the policies
@@ -64,15 +32,47 @@ RANDFILE                = $dir/private/.rand
 unique_subject          = no                        # Require unique subject
 default_days            = 365                       # How long to certify for
 default_md              = sha256                    # MD to use
-email_in_dn             = no                        # Add email to cert DN
+email_in_dn             = yes                       # Add email to cert DN
 preserve                = no                        # Keep passed DN ordering
 name_opt                = ca_default                # Subject DN display options
 cert_opt                = ca_default                # Certificate display options
-copy_extensions         = none                      # Copy extensions from CSR
+copy_extensions         = none                      # Copy extensions from CSR to the signed certificates
 default_crl_days        = 365                       # How long before next CRL
 crl_extensions          = crl_ext                   # CRL extensions
 policy                  = policy_strict             # Default naming policy
-x509_extensions         = super_cert       # Default cert extensions
+x509_extensions         = ca_intermediate_ext       # Default cert extensions
+
+# The next part of the configuration file is used by the openssl req command.
+# It defines the CA's key pair, its DN, and the desired extensions for the CA
+# certificate.
+
+[ req ]
+# Options for the `req` tool (`man req`).
+default_bits        = 4096
+utf8                = yes
+prompt              = no
+string_mask         = utf8only
+default_md          = sha256
+distinguished_name  = ca_intermediate_dn
+x509_extensions     = ca_intermediate_ext
+
+[ ca_intermediate_dn ]
+domainComponent                 = Domain Component (eg, company.com)
+countryName                     = Country Name (2 letter code)
+stateOrProvinceName             = State or Province Name (full name)
+localityName                    = Locality Name (eg, city)
+0.organizationName              = Organization Name (eg, company)
+organizationalUnitName          = Unit Name (eg, section)
+commonName                      = Common Name (eg, server)
+emailAddress                    = Email
+
+# Optionally, specify some defaults.
+countryName_default             = FR
+stateOrProvinceName_default     = IdF
+localityName_default            = Paris
+0.organizationName_default      = EasySSL
+organizationalUnitName_default  = ValhallaCorp
+emailAddress_default            = easyssl@valhalla.com
 
 # Naming policies control which parts of a DN end up in the certificate and
 # under what circumstances certification should be denied.
@@ -82,6 +82,7 @@ domainComponent         = match                 # Must match 'simple.org'
 organizationName        = match                 # Must match 'Simple Inc'
 organizationalUnitName  = optional              # Included if present
 commonName              = supplied              # Must be present
+emailAddress            = optional              # Included if present
 
 # Certificate extensions define what types of certificates the CA is able to
 # create.
@@ -89,6 +90,13 @@ commonName              = supplied              # Must be present
 # root CA since it is self-signed)
 
 [ crl_ext ]
+authorityKeyIdentifier  = keyid:always
+
+[ ca_intermediate_ext ]
+nsComment = "OpenSSL Generated CA intermediate certificate"
+keyUsage                = critical,keyCertSign,cRLSign,digitalSignature
+basicConstraints        = critical,CA:true,pathlen:0
+subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always
 
 [ client_cert ]

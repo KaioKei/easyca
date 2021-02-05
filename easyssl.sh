@@ -216,7 +216,7 @@ function makeConfigure() {
 
     # autodn
     sed -i -e "s+{{cn}}+$5+g" "${current_dir}/${AUTODN_CONF_NAME}"
-    # sed -i -e "s+{{cn}}+${arg_cn}+g" "${current_dir}/${AUTODN_CONF_NAME}"
+    sed -i -e "s+{{name}}+$1+g" "${current_dir}/${AUTODN_CONF_NAME}"
 }
 
 function makeRoot() {
@@ -258,6 +258,7 @@ function makeNode() {
     # shellcheck source=/dev/null
     source "${current_dir}/${AUTODN_CONF_NAME}"
     subject="/DC=${auto_DC}/C=${auto_C}/ST=${auto_ST}/L=${auto_L}/O=${auto_O}/OU=${auto_OU}/CN=${auto_CN}/emailAddress=${auto_email}"
+    # openssl req -new -config "${conf}" -sha256 -key "${private_key}" -x509 -days ${VALIDITY} -extensions "${cert_extension}" -out "${csr}" -subj "${subject}"
     openssl req -new -config "${conf}" -sha256 -key "${private_key}" -out "${csr}" -subj "${subject}"
 
     echo ". Create the certificate"
