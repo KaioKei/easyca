@@ -39,6 +39,7 @@ arg_do_node="False"
 arg_extension="None"
 arg_issuer="None"
 arg_name="None"
+arg_cn="None"
 arg_san="localhost,127.0.0.1"
 
 # shellcheck source=/dev/null
@@ -109,7 +110,6 @@ purgeDirs() {
     fi
 }
 
-# Change the Common Name of the generated certificates
 # Change the name of the generated files
 # arg1: name of the generated chain
 function configureName() {
@@ -119,6 +119,15 @@ function configureName() {
     ca_root_name="$1_root"
     ca_intermediate_name="$1_intermediate"   
     node_name="$1"
+}
+
+# Change the Common Name of the generated certificates
+# If no CN has been provided by the user, the CN is the name of the node
+function configureCN() {
+    if [ "${arg_cn}" == "None" ];then
+        # node name MUST be set at this step
+        arg_cn="${node_name}"
+    fi
 }
 
 function configureNodeIssuer() {
@@ -182,6 +191,8 @@ function makeChainFiles(){
 #       the current openssl configuration file. It will be used to generate the certificate.
 # arg3 : issuer directory
 # arg4 : issuer certificate name
+# arg5 : the CN value for the generated cert. If CA root or intermediate, provide the name (i.e arg1), otherwise provide
+#        another CN value for nodes
 function makeConfigure() {
     current_dir="${chain_dir}/$1"
     current_env="${chain_dir}/$1/${ENVIRONMENT_CONF_NAME}"
@@ -204,7 +215,8 @@ function makeConfigure() {
     sed -i -e "s+{{dir}}+${current_dir}+g" "${current_conf}"
 
     # autodn
-    sed -i -e "s+{{cn}}+$1+g" "${current_dir}/${AUTODN_CONF_NAME}"
+    sed -i -e "s+{{cn}}+$5+g" "${current_dir}/${AUTODN_CONF_NAME}"
+    # sed -i -e "s+{{cn}}+${arg_cn}+g" "${current_dir}/${AUTODN_CONF_NAME}"
 }
 
 function makeRoot() {
@@ -300,18 +312,19 @@ while [[ $# -gt 0 ]]; do
 
     --issuer)
         arg_issuer=$2
-        shift
-        shift
+        shift 2
         ;;
     --name)
         arg_name=$2
-        shift
-        shift
+        shift 2
+        ;;
+    --cn)
+        arg_cn=$2
+        shift 2
         ;;
     --san)
         arg_san=$2
-        shift
-        shift
+        shift 2
         ;;
 
     -p | --purge)
@@ -346,6 +359,9 @@ if [ "${arg_name}" != "None" ]; then
     configureName "${arg_name}"
 fi
 
+# Always configure the CN of the node
+configureCN
+
 #setup
 makeChainDir
 # if there is a provided issuer, ignore root and intermediate CA generation
@@ -354,14 +370,14 @@ if [ "${arg_issuer}" == "None" ]; then
         log_green "## MAKE ROOT CA CERTS ##"
         makeChainFiles "ca_root.cnf" "${ca_root_name}"
         issuer_dir="${chain_dir}/${ca_root_name}"
-        makeConfigure "${ca_root_name}" "${CAROOT_EXTENSION}" "${issuer_dir}" "${ca_root_name}.crt"
+        makeConfigure "${ca_root_name}" "${CAROOT_EXTENSION}" "${issuer_dir}" "${ca_root_name}.crt" "${ca_root_name}"
         makeRoot
     fi
     if [ "${arg_do_intermediate}" == "True" ]; then
         log_green "## MAKE INTERMEDIATE CA CERTS ##"
         makeChainFiles "ca_intermediate.cnf" "${ca_intermediate_name}"
         issuer_dir="${chain_dir}/${ca_root_name}"
-        makeConfigure "${ca_intermediate_name}" "${INTERMEDIATE_EXTENSION}" "${issuer_dir}" "ca_file.crt"
+        makeConfigure "${ca_intermediate_name}" "${INTERMEDIATE_EXTENSION}" "${issuer_dir}" "ca_file.crt" "${ca_intermediate_name}"
         makeNode "${ca_intermediate_name}"
     fi
 fi
@@ -370,7 +386,7 @@ if [ "${arg_do_node}" == "True" ]; then
     log_green "## MAKE NODE CERTS ##"
     makeChainFiles "node.cnf" "${node_name}"
     configureNodeIssuer
-    makeConfigure "${node_name}" "${arg_extension}" "${node_issuer_dir}" "ca_file.crt"
+    makeConfigure "${node_name}" "${arg_extension}" "${node_issuer_dir}" "ca_file.crt" "${arg_cn}"
     configureDNS "${node_issuer_dir}/${OPENSSL_CONF_NAME}"
     makeNode "${node_name}"
 fi
