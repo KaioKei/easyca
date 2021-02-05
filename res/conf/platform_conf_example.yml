@@ -1,15 +1,12 @@
 platform:
   password: "secret123"
-  material:
-    - host: server1
-      ip: 172.28.128.21
-    - host: server2
-      ip: 172.28.128.22
-      admin: true
-    - host: server3
-      ip: 172.28.128.23
-      admin: true
-    - host: server4
-      ip: 172.28.128.24
-    - host: server5
-      ip: 172.28.128.25
+  hosts:
+    - hostname: server1 # affects filename, SAN and CN
+      ip: 172.28.128.21 # affects SAN
+    - users: ["admin"] # Affects filenames and CN
+      hostname: server2 # affects SAN
+      ip: 172.28.128.22 # affects SAN
+    - cn: server2 # affects CN
+      users: ["admin-1", "admin-2"] # Affects filenames
+      hostname: server3 # affects SAN
+      ip: 172.28.128.22 # affects SAN

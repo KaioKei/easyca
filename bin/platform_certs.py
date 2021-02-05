@@ -8,9 +8,9 @@ import subprocess
 import sys
 import time
 from enum import Enum
-from getpass import getpass
 from pathlib import Path
 from typing import List, Dict, Pattern
+
 import yaml
 
 TIMESTAMP = calendar.timegm(time.gmtime())
@@ -40,13 +40,16 @@ KEYSTORE_KEY = "keystore"
 # platform configuration
 CONF_ROOT = "platform"
 CONF_PASSWORD = "password"
-CONF_MATERIAL = "material"
-CONF_HOST = "host"
+CONF_HOSTS = "hosts"
+CONF_HOSTNAME = "hostname"
 CONF_IP = "ip"
-CONF_ADMIN = "admin"
+CONF_USERS = "users"
+CONF_CN = "cn"
+# CONF_ADMIN = "admin"
+# CONF_NAME = "name"
 
 # inputs
-g_conf_material: List[Dict[str, str]]
+g_conf_hosts: List[Dict[str, str]]
 g_platform_servers: List[str]
 g_admin_servers: List[str]
 g_password: str
@@ -64,7 +67,7 @@ g_ca_intermediate_dir: str
 #     "cert": "cert_location"
 #   }
 # }
-g_material_locations: Dict[str, Dict[str, str]] = {}
+g_material_locations: Dict[str, Dict[str, Dict[str, str]]] = {}
 
 
 # CLASS UTILS
@@ -179,18 +182,13 @@ def get_admin_name(basename: str):
 
 
 # PLATFORM GENERATION #
-def generate_ca():
+def generate_ca_chain():
     ca_cmd: List[str] = [EASYSSL_SCRIPT, "--intermediate", "--name", CA_ALIAS]
     execute(ca_cmd)
-    save_ca(CA_ALIAS)
 
-
-def save_ca(alias: str):
-    """
-    Keep ca root and intermediate locations in global vars
-    """
+    # save ca certs
     ca_material = MaterialFactory.get_certificate_material()
-    ca_chain_dir = find(CHAINS_DIR, alias + CHAINS_SUFFIX_REGEX, Filetype.DIR, exact_match=True)
+    ca_chain_dir = find(CHAINS_DIR, CA_ALIAS + CHAINS_SUFFIX_REGEX, Filetype.DIR, exact_match=True)
     # root
     global g_ca_root_cert
     g_ca_root_cert = \
@@ -218,52 +216,54 @@ def generate_truststore():
     execute(import_ca_cmd)
 
 
-def generate_certs(name: str, san: str):
-    create_certs_cmd: List[str] = [EASYSSL_SCRIPT, "--super",
-                                   "--name", name,
-                                   "--issuer", g_ca_intermediate_dir,
-                                   "--san", san]
-    execute(create_certs_cmd)
-    # store in global dictionary for further usage (import in truststore, extraction)
-    save_certs(name)
-
-
-def save_certs(name: str):
-    chain_dir: str = find(CHAINS_DIR, name + CHAINS_SUFFIX_REGEX, Filetype.DIR, exact_match=True)
-    cert_location: str = get_material(chain_dir, name, MaterialFactory.get_certificate_material())
-    key_location: str = get_material(chain_dir, name, MaterialFactory.get_private_key_material())
-    global g_material_locations
-    g_material_locations[name] = {}
-    g_material_locations[name][LOCATION_KEY] = chain_dir
-    g_material_locations[name][KEY_KEY] = key_location
-    g_material_locations[name][CERT_KEY] = cert_location
-
-
-def generate_certs_wrapper():
-    for host_conf in g_conf_material:
-        name = host_conf.get(CONF_HOST)
-        san = f"{host_conf.get(CONF_HOST)},{host_conf.get(CONF_IP)}"
-        generate_certs(name, san)
-        # also generate admin if conf triggers it
-        if host_conf.get(CONF_ADMIN):
-            generate_certs(get_admin_name(host_conf.get(CONF_HOST)), san)
+def generate_certs_chains():
+    for host_conf in g_conf_hosts:
+        # if 'users' not configured, only generate a cert named after the hostname
+        hostname = host_conf.get(CONF_HOSTNAME)
+        users: List[str] = host_conf.get(CONF_USERS) if CONF_USERS in host_conf else [hostname]
+        san = f"{hostname},{host_conf.get(CONF_IP)}"
+        cn = host_conf.get(CONF_CN)
+        # init metadata
+        global g_material_locations
+        g_material_locations[hostname] = {}
+        for user in users:
+            create_certs_cmd: List[str] = [EASYSSL_SCRIPT, "--super",
+                                           "--name", user,
+                                           "--issuer", g_ca_intermediate_dir,
+                                           "--san", san]
+            if cn is not None:
+                create_certs_cmd = create_certs_cmd + ["--cn", cn]
+        
+            print()
+            print(f"generate chain with : {create_certs_cmd}")
+            execute(create_certs_cmd)
+        
+            # save certs locations in global dictionary for further usage (import in truststore, extraction)
+            chain_dir: str = find(CHAINS_DIR, user + CHAINS_SUFFIX_REGEX, Filetype.DIR, exact_match=True)
+            cert_location: str = get_material(chain_dir, user, MaterialFactory.get_certificate_material())
+            key_location: str = get_material(chain_dir, user, MaterialFactory.get_private_key_material())
+            g_material_locations[hostname][user] = {}
+            g_material_locations[hostname][user][LOCATION_KEY] = chain_dir
+            g_material_locations[hostname][user][KEY_KEY] = key_location
+            g_material_locations[hostname][user][CERT_KEY] = cert_location
 
 
 def generate_keystores():
     keystore_material = MaterialFactory.get_keystore_material()
-    for material_name, material_section in g_material_locations.items():
-        keystore_parent_dir = g_material_locations[material_name][LOCATION_KEY]
-        keystore_location: str = f"{keystore_parent_dir}/{material_name}-keystore.{keystore_material.file_type}"
-        # create keystore
-        generate_keystore_cmd: List[str] = [STORE_SCRIPT, "--create",
-                                            "--key", material_section.get(KEY_KEY),
-                                            "--cert", material_section.get(CERT_KEY),
-                                            "--intermediate", g_ca_intermediate_cert,
-                                            "--output", material_section.get(LOCATION_KEY),
-                                            "--pass", g_password]
-        execute(generate_keystore_cmd)
-        # save keystore location
-        g_material_locations[material_name][KEYSTORE_KEY] = keystore_location
+    for hostname, host_section in g_material_locations.items():
+        for username, user_section in host_section.items():
+            keystore_parent_dir: str = f"{user_section.get(LOCATION_KEY)}/{username}/{keystore_material.parent_dir}"
+            # create keystore
+            generate_keystore_cmd: List[str] = [STORE_SCRIPT, "--create",
+                                                "--key", user_section.get(KEY_KEY),
+                                                "--cert", user_section.get(CERT_KEY),
+                                                "--intermediate", g_ca_intermediate_cert,
+                                                "--output", keystore_parent_dir,
+                                                "--pass", g_password]
+            execute(generate_keystore_cmd)
+            # save keystore location
+            keystore_location: str = f"{keystore_parent_dir}/{username}-keystore.{keystore_material.file_type}"
+            g_material_locations[hostname][username][KEYSTORE_KEY] = keystore_location
 
 
 def trust_certs_ca():
@@ -276,20 +276,34 @@ def trust_certs_ca():
 
 
 def extract():
-    # ca in common dir
+    print()
+    print(g_material_locations)
+    # copy ca in platform common dir
     shutil.copy(g_ca_intermediate_file, f"{PLATFORM_DIR}")
-    material_hosts = [material.get(CONF_HOST) for material in g_conf_material]
-    # materials
-    for dir_name in material_hosts:
-        # create dirs
-        dir_location: str = f"{PLATFORM_DIR}/{dir_name}"
-        if not Path(dir_location).exists():
-            Path(dir_location).mkdir(parents=True)
-        for material_name, material_section in g_material_locations.items():
-            if dir_name in material_name:
-                shutil.copy(material_section.get(KEYSTORE_KEY), dir_location)
-                shutil.copy(material_section.get(CERT_KEY), dir_location)
-                shutil.copy(material_section.get(KEY_KEY), dir_location)
+
+    for hostname, host_section in g_material_locations.items():
+        # create host folder
+        folder_path = Path(f"{PLATFORM_DIR}/{hostname}")
+        if not folder_path.exists():
+            folder_path.mkdir(parents=True)
+        # copy each TLS material inside the dedicated host folder
+        for user, user_section in host_section.items():
+            shutil.copy(user_section.get(KEYSTORE_KEY), folder_path)
+            shutil.copy(user_section.get(CERT_KEY), folder_path)
+            shutil.copy(user_section.get(KEY_KEY), folder_path)
+
+    # material_hosts = [host.get(CONF_HOSTNAME) for host in g_conf_hosts]
+    # # materials
+    # for dir_name in material_hosts:
+    #     # create dirs
+    #     dir_location: str = f"{PLATFORM_DIR}/{dir_name}"
+    #     if not Path(dir_location).exists():
+    #         Path(dir_location).mkdir(parents=True)
+    #     for material_name, material_section in g_material_locations.items():
+    #         if dir_name in material_name:
+    #             shutil.copy(material_section.get(KEYSTORE_KEY), dir_location)
+    #             shutil.copy(material_section.get(CERT_KEY), dir_location)
+    #             shutil.copy(material_section.get(KEY_KEY), dir_location)
 
 
 # MAIN #
@@ -310,13 +324,13 @@ def init():
 
 
 def load_configuration(configuration_file: str):
-    global g_conf_material
+    global g_conf_hosts
     global g_password
     with open(configuration_file, 'r') as stream:
         try:
             conf = yaml.safe_load(stream).get(CONF_ROOT)
             g_password = conf.get(CONF_PASSWORD)
-            g_conf_material = conf.get(CONF_MATERIAL)
+            g_conf_hosts = conf.get(CONF_HOSTS)
         except yaml.YAMLError as exc:
             print(exc)
             sys.exit(1)
@@ -324,18 +338,18 @@ def load_configuration(configuration_file: str):
 
 def launch():
     print_state(". Initialize CA ..")
-    generate_ca()
+    generate_ca_chain()
     print("OK")
     print_state(". Generate platform truststore ..")
     generate_truststore()
     print("OK")
     print_state(". Generate platform certificates  ..")
-    generate_certs_wrapper()
+    generate_certs_chains()
     print("OK")
     print_state(". Generate keystores ..")
     generate_keystores()
     print("OK")
-    print_state(". Generate platform CA certificate ..")
+    print_state(". Generate platform CA file ..")
     trust_certs_ca()
     print("OK")
     print_state(". Extract result ..")
@@ -356,6 +370,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     load_configuration(args.configuration)
+    # print(f"conf hosts: {g_conf_hosts}")
     # sys.exit(0)
     init()
     launch()
