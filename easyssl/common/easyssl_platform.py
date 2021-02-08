@@ -15,7 +15,7 @@ import yaml
 
 TIMESTAMP = calendar.timegm(time.gmtime())
 # program dirs
-EASYSSL_DIR = "/home/lca/Projects/personnal/easyssl"
+EASYSSL_DIR = "/"
 CHAINS_DIR = f"{EASYSSL_DIR}/chains"
 PLATFORM_DIR = f"{EASYSSL_DIR}/platforms/platform_{TIMESTAMP}"
 # scripts
