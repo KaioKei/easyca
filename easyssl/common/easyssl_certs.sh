@@ -9,20 +9,27 @@ blu=$'\e[1;34m'
 end=$'\e[0m'
 
 TIME=$(date +%s)
-SCRIPT_PATH="$(realpath "$0")"
-EASYSSL_DIR="$(dirname "${SCRIPT_PATH}")"
-UTILITY_SCRIPT="${EASYSSL_DIR}/bin/utility.sh"
-CHAINS_DIR=${EASYSSL_DIR}/chains
-CHAINS_FILE=${CHAINS_DIR}/.chains
 
-VALIDITY=365
-SIZE=4096
-MD=sha256
+# paths
+SCRIPT_PATH="$(realpath "$0")"
+COMMON_DIR="$(dirname "${SCRIPT_PATH}")"
+UTILITY_SCRIPT="${COMMON_DIR}/utils/certs_utils.sh"
+EASYSSL_DIR="$(dirname "${COMMON_DIR}")"
+CHAINS_DIR="${EASYSSL_DIR}/build/chains"
+CHAINS_FILE=${CHAINS_DIR}/.chains
+CONF_DIR="${EASYSSL_DIR}/resources/conf"
+
+# conf
 AUTODN_CONF_NAME="autodn.properties"
 ENVIRONMENT_CONF_NAME="environment.properties"
 OPENSSL_CONF_NAME="openssl.cnf"
 CAROOT_EXTENSION="ca_root_ext"
 INTERMEDIATE_EXTENSION="ca_intermediate_ext"
+
+# constants
+VALIDITY=365
+SIZE=4096
+MD=sha256
 
 # === GLOBAL VARS ===
 chain_name="chain_${TIME}"
@@ -43,7 +50,7 @@ arg_cn="None"
 arg_san="localhost,127.0.0.1"
 
 # shellcheck source=/dev/null
-source "${EASYSSL_DIR}/bin/utility.sh"
+source "${UTILITY_SCRIPT}"
 
 # === USAGE ===
 
@@ -178,11 +185,11 @@ function makeChainFiles(){
     chmod 700 private
     touch index.txt index.txt.attr
     echo 1000 > serial
-    cd "${EASYSSL_DIR}" || exit
+    cd "${COMMON_DIR}" || exit
 
-    cp "${EASYSSL_DIR}/res/conf/${AUTODN_CONF_NAME}" "${current_dir}"
-    cp "${EASYSSL_DIR}/res/conf/${ENVIRONMENT_CONF_NAME}" "${current_dir}"
-    cp "${EASYSSL_DIR}/res/conf/$1" "${current_dir}/${OPENSSL_CONF_NAME}"
+    cp "${CONF_DIR}/${AUTODN_CONF_NAME}" "${current_dir}"
+    cp "${CONF_DIR}/${ENVIRONMENT_CONF_NAME}" "${current_dir}"
+    cp "${CONF_DIR}/$1" "${current_dir}/${OPENSSL_CONF_NAME}"
 }
 
 # Configure the environment, the file and the autodn files according to the current name and extension
@@ -342,7 +349,7 @@ while [[ $# -gt 0 ]]; do
         exit 0
         ;;
     --platform)
-        $EASYSSL_DIR/bin/platform.sh
+        $COMMON_DIR/bin/platform.sh
         exit 0
         ;;
     *) # unknown option
@@ -394,6 +401,6 @@ fi
 
 log_green ". DONE !"
 echo ""
-tree "${chain_dir}" -L 1
+echo "chain_dir: ${CHAINS_DIR}/${chain_name}"
 
 exit 0

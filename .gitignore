@@ -1,10 +1,8 @@
-**1598**
+# intellij
 .idea
 
-extract*
-chains
-chain*
-.chains
-platforms
+# build
+easyssl/build
 
-log
+# logs
+easyssl/logs
