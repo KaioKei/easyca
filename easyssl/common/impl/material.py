@@ -1,4 +1,15 @@
-from easyssl.common.utils.platform_utils import Filetype
+from enum import Enum
+
+
+class Filetype(Enum):
+    DIR = "dir"
+    FILE = "file"
+    P8 = "p8"
+    CRT = "crt"
+    JKS = "jks"
+
+    def __str__(self):
+        return self.value
 
 
 class Material:

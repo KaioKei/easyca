@@ -10,8 +10,8 @@ from typing import List, Dict
 
 import yaml
 
-from easyssl.common.impl.material import Material, MaterialFactory
-from easyssl.common.utils.platform_utils import execute
+from common.impl.material import Material, MaterialFactory
+from common.utils.platform_utils import execute
 
 TIMESTAMP = calendar.timegm(time.gmtime())
 # program dirs
@@ -233,27 +233,7 @@ def load_configuration(configuration_file: str):
             sys.exit(1)
 
 
-def launch():
-    print_state(". Initialize CA ..")
-    generate_ca_chain()
-    print("OK")
-    print_state(". Generate platform truststore ..")
-    generate_truststore()
-    print("OK")
-    print_state(". Generate platform certificates  ..")
-    generate_certs_chains()
-    print("OK")
-    print_state(". Generate keystores ..")
-    generate_keystores()
-    print("OK")
-    print_state(". Extract result ..")
-    extract()
-    print("OK")
-
-    print(f". Done : {PLATFORM_DIR}")
-
-
-if __name__ == "__main__":
+def launch(arguments: List[str]):
     # parsing
     parser = argparse.ArgumentParser(description='Generate TLS materials for a list of hosts. TLS material = private '
                                                  'key, public key, CA file, keystore and truststore. The truststore and'
@@ -263,11 +243,28 @@ if __name__ == "__main__":
                         help='Platform configuration file. Check "conf/platform_conf_example.yml"')
     parser.add_argument('--purge', dest='purge_platforms', action='store_true',
                         help=f"Remove all platforms dir in {PLATFORMS_DIR}")
-    args = parser.parse_args()
+    args = parser.parse_args(arguments)
 
     if args.purge_platforms:
         purge()
     else:
         load_configuration(args.configuration)
         init()
-        launch()
+
+        print_state(". Initialize CA ..")
+        generate_ca_chain()
+        print("OK")
+        print_state(". Generate platform truststore ..")
+        generate_truststore()
+        print("OK")
+        print_state(". Generate platform certificates  ..")
+        generate_certs_chains()
+        print("OK")
+        print_state(". Generate keystores ..")
+        generate_keystores()
+        print("OK")
+        print_state(". Extract result ..")
+        extract()
+        print("OK")
+
+        print(f". Done : {PLATFORM_DIR}")

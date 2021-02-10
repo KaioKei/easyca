@@ -10,8 +10,7 @@ cyn=$'\e[1;36m'
 end=$'\e[0m'
 
 TIME=$(date +%s)
-PARENT_DIR="$(dirname "$SCRIPT")"
-
+UTILS_SCRIPT_PATH="$(realpath "$0")"
 # === FUNCTIONS ===
 
 function log_red() {
@@ -37,7 +36,7 @@ function extract(){
   fi
 
   # for each chain, extract all certs inside a dedicated directory
-  chains=$(cat "${PARENT_DIR}/chains/.chains")
+  chains=$(cat "${CHAINS_DIR}/.chains")
   extract_dir="$1/extract_${TIME}"
   for chain_source_dir in ${chains[*]}
   do

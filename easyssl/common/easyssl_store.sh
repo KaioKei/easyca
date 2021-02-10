@@ -46,31 +46,31 @@ function usage(){
   Create a keystore and a truststore from a provided private key, a certificate and a CA file (Optional)
 
   ${blu}Usage :${end}
-  store.sh [mode] [options]
+  store [mode] [options]
 
   ${grn}[ mode ]${end}
   --create\t\tCreate a keystore and a truststore with the provided material
   --import\t\tImport a key, a cert or a CA file inside the provided store
 
   ${grn}[ options ]${end}
+  --pass [password]\tMANDATORY password of the keystore
   --key [path]\t\tUser private key.
   --cert [path]\t\tUser certificate.
-  --cafile [path]\tUser CA file. Optional. Default is None.
-  --store [path]\tKeystore or truststore. Used by '--import' mode only.
-  --alias [name]\tName of the cert inside the stores and the stores name. Optional. Default is 'certificate'.
-  --output [path]\tFolder path where the keystore and the truststore are generated. Optional. Default is '/tmp'.
+  --cafile [path]\t\tUser CA file. Optional. Default is None.
+  --store [path]\t\tKeystore or truststore. Used by '--import' mode only.
+  --alias [name]\t\tName of the cert inside the stores and the stores name. Optional. Default is 'certificate'.
+  --output [path]\t\tFolder path where the keystore and the truststore are generated. Optional. Default is '/tmp'.
 
   ${blu}Examples :${end}
   . Create a truststore and a keystore :
-  store.sh --create --key server.p8 --cert server.crt --cafile ca.crt --output /tmp/stores
+  store --create --key server.p8 --cert server.crt --cafile ca.crt --output /tmp/stores --pass secret
 
   . Import a certificate inside a truststore :
-  store.sh --import --cert server.crt --store truststore.jks
+  store --import --cert server.crt --store truststore.jks --pass secret
 
   . Import a CA file inside a keystore :
-  store.sh --import -cafile ca.crt --store keystore.jks
+  store --import -cafile ca.crt --store keystore.jks --pass secret
   "
-
 }
 
 # Import a CA cert inside a store
@@ -189,7 +189,9 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 if [ "${arg_pass}" != "None" ]; then
     password="${arg_pass}"
 else
-    read -r -s -p "Enter stores password: " password
+    log_red "! FATAL: You must provide option '--pass'"
+    usage
+    exit 1
 fi
 printf "\n\n"
 
@@ -201,9 +203,9 @@ if [ "${arg_mode}" == "create" ]; then
   log_green "### CREATE STORES ###"
   keystore
   truststore
-  log_green ". Done"
+  log_green ". Done in:"
   echo ""
-  tree "${arg_out_dir}" -L 1
+  echo "${arg_out_dir}"
 # import mode
 elif [ "${arg_mode}" == "import" ]; then
     if [ "${arg_ca_file}" != "None" ]; then

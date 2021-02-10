@@ -6,3 +6,6 @@ easyssl/build
 
 # logs
 easyssl/logs
+
+# python
+**/__pycache__

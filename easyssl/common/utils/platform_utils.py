@@ -1,10 +1,10 @@
 import subprocess
-from enum import Enum
-from re import Pattern
 from typing import List
 
+CMD_TIMEOUT_SECONDS = 10
 
-def execute(command: List[str], logfile: str = None, user_input: str = None):
+
+def execute(command: List[str], logfile: str = None, user_input: str = None, stream_stdout: bool = False):
     """
     Run a subprocess from the provided command and log into a dedicated logfile
     The subprocess may depends on user input
@@ -12,37 +12,32 @@ def execute(command: List[str], logfile: str = None, user_input: str = None):
     :param command: List of params to launch the subprocess (just like a command line)
     :param logfile: Absolute path to a log file to print the command output
     :param user_input: String user input to provide to the launched subprocess
+    :param stream_stdout: If true, stream the stdout of the process in console
     :return: A list with process' [return_code, stdout]
     """
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # user input
     if user_input is not None:
-        input_bytes = str.encode(user_input)
-        p = subprocess.run(command, input=input_bytes, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True)
-    else:
-        p = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True)
-
-    output: str = p.stdout.decode("utf-8")
-
-    # log in file
+        process.communicate(str.encode(user_input), timeout=CMD_TIMEOUT_SECONDS)
+    # logfile
     if logfile is not None:
-        with open(logfile, 'a') as logfile:
-            logfile.write(output)
+        stdout_file = open(logfile, 'a')
+    # process execution
+    while True:
+        output = process.stdout.readline()
+        if output == b'' and process.poll() is not None:
+            break
+        elif output:
+            output_str = output.decode("utf-8").strip()
+            if stream_stdout:
+                print(output_str)
+            if logfile is not None:
+                stdout_file.write(output_str)
 
-    return [int(p.returncode), str(output)]
+    process.terminate()
 
+    if logfile is not None:
+        stdout_file.close()
 
-def filter_list(my_list: List[str], regex: Pattern[str]):
-    """
-    filter list members by regex
-    """
-    return list(filter(lambda x: regex.match(x), my_list))
-
-
-class Filetype(Enum):
-    DIR = "dir"
-    FILE = "file"
-    P8 = "p8"
-    CRT = "crt"
-    JKS = "jks"
-
-    def __str__(self):
-        return self.value
+    # return [int(p.returncode), str(output)]
+    # return [0, "dumb"]
