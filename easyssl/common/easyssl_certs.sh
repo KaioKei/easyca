@@ -58,7 +58,7 @@ usage() {
     # shellcheck disable=SC2059
     printf "${blu}Overview :${end}
 
-  This script creates a CA with root, intermediate signing ca and nodes certificates.
+  This script creates a CA with root, an intermediate CA and nodes certificates.
   Every certificate is signed by the same generated intermediate CA.
   All of the nodes certificates share the same hostname information : 'localhost' by default
   You can override the hostname of the certificates with : '--hostname [hostname]'.
@@ -69,9 +69,16 @@ usage() {
   ${blu}Usage :${end}
   ./easyssl.sh [Mandatory: purpose] [Optional: options] | [utility]
 
+  ${grn}[ utility ]${end}
+  -h,--help\t\tDisplay this
+  -l,--list\t\tList all generated chains
+  -p,--purge\t\tRemove all generated chains
+  -s,--subject [path]\tDisplay the subject of the provided cert
+  -e,--extract [path]\tExtract all certs of all chains inside the provided absolute path
+
   ${grn}[ purpose ]${end}
-  --root\t\tOnly Generate root CA
-  --intermediate\tGenerate a root CA and an intermediate signing CA
+  --root\t\t\tOnly Generate root CA
+  --intermediate\t\tGenerate a root CA and an intermediate signing CA
   --server [number]\tGenerate server-side certs with CA
   --client [number]\tGenerate client-side certs with CA
   --super [number]\tGenerate both server-side and client-side certs with CA
@@ -81,41 +88,21 @@ usage() {
   --san [host,ip..]\tAdd Subject Alternative Names for the generated certs. Default is 'localhost'. Eg: '--san 192.168.0.1,server1'
   --issuer [folder]\tGenerate certs using the provided CA. The folder MUST contain an openssl configuration file and a 'certs' folder containing the CA certificate. The path MUST be absolute.
 
-  ${grn}[ utility ]${end}
-  -h,--help\t\tDisplay this
-  -p,--purge\t\tRemove all generated chains
-  -s,--subject [path]\tDisplay the subject of the provided cert
-  -e,--extract [path]\tExtract all certs of all chains inside the provided absolute path
-
   ${blu}Examples :${end}
-  - Create certs for server-side and client-side purpose:
+  # Create certs for server-side and client-side purpose:
   ./easyssl.sh --super
 
-  - Create an intermediate CA and generate server and client keys signed by this CA :
+  # Create an intermediate CA and generate server and client keys signed by this CA :
   ./easyssl.sh --intermediate --name myCA
   ./easyssl.sh --server --issuer /home/user/easyssl/chains/myCA/ca_intermediate
   ./easyssl.sh --client --issuer /home/user/easyssl/chains/myCA/ca_intermediate
 
-  - Add SAN to the generated certificate :
+  # Add SAN to the generated certificate :
   ./easyssl.sh --server --san 192.168.0.1,server1
   "
 }
 
 # === FUNCTIONS ===
-
-# Remove all dirs referenced inside the file .chains
-purgeDirs() {
-    log_red "## REMOVE CHAINS ##"
-    # purge chains
-    if [ -f "${CHAINS_FILE}" ]; then
-        chains=$(cat "${CHAINS_FILE}")
-        for chain in $chains; do
-            rm -rf "$chain"
-            printf ". Removed %s\n" "${chain}"
-        done
-        rm "${CHAINS_FILE}"
-    fi
-}
 
 # Change the name of the generated files
 # arg1: name of the generated chain
@@ -341,15 +328,15 @@ while [[ $# -gt 0 ]]; do
         exit 0
         ;;
     -s | --subject)
-        ${UTILITY_SCRIPT} --subject "$2"
+        subject "$2"
         exit 0
         ;;
     -e | --extract)
-        ${UTILITY_SCRIPT} --extract "$2"
+        extract "$2"
         exit 0
         ;;
-    --platform)
-        $COMMON_DIR/bin/platform.sh
+    -l | --list)
+        list
         exit 0
         ;;
     *) # unknown option

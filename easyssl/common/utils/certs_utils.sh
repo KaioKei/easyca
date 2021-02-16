@@ -10,7 +10,6 @@ cyn=$'\e[1;36m'
 end=$'\e[0m'
 
 TIME=$(date +%s)
-UTILS_SCRIPT_PATH="$(realpath "$0")"
 # === FUNCTIONS ===
 
 function log_red() {
@@ -19,6 +18,21 @@ function log_red() {
 
 function log_green() {
     printf "${grn}%s${end}\n" "$1"
+}
+
+# Remove all dirs referenced inside the file .chains
+function purgeDirs() {
+    log_red "## REMOVE CHAINS ##"
+    # purge chains
+    # shellcheck disable=SC2153
+    if [ -f "${CHAINS_FILE}" ]; then
+        chains=$(cat "${CHAINS_FILE}")
+        for chain in $chains; do
+            rm -rf "$chain"
+            printf ". Removed %s\n" "${chain}"
+        done
+        rm "${CHAINS_FILE}"
+    fi
 }
 
 function subject(){
@@ -57,7 +71,7 @@ function extract(){
 # else the certificates are simply concatenated at the top of the ca file, keeping the order as they are provided
 # arg1: absolute path to the ca file
 # arg@:2 : certificates to trust
-trust(){
+function trust(){
   ca_file="$1"
   if [ ! -f "${ca_file}" ]; then
       touch "${ca_file}"
@@ -70,31 +84,14 @@ trust(){
   printf ". CA file updated in %s\n" "${ca_file}"
 }
 
-
-# === PARSING ===
-
-POSITIONAL=()
-while [[ $# -gt 0 ]]
-do
-  key="$1"
-  case $key in
-    --subject)
-      subject "$2"
-      exit 0
-      ;;
-    --extract)
-      extract "$2"
-      exit 0
-      ;;
-    --trust)
-      trust "${@:2}"
-      exit 0
-      ;;
-    *)    # unknown option
-      POSITIONAL+=("$1") # save it in an array for later
-      shift # past argument
-      ;;
-  esac
-done
-set -- "${POSITIONAL[@]}" # restore positional parameters
-
+function list(){
+    chains_file="${CHAINS_DIR}/.chains"
+    if [ -f "${chains_file}" ];then
+        chains=$(cat "${CHAINS_DIR}/.chains")
+        for chain_source_dir in ${chains[*]}
+        do
+            chain_name=$(basename "${chain_source_dir}")
+            echo "$chain_name"
+        done
+    fi
+}
