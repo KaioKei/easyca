@@ -107,7 +107,16 @@ usage() {
 # Change the name of the generated files
 # arg1: name of the generated chain
 function configureName() {
-    chain_name="$1_${TIME}"
+    # check if a chain has the same name
+    names=$(list)
+    for name in ${names[*]}; do
+        if [ "$1" == "${name}" ];then
+            log_red "! FATAL: '$1' already exists"
+            exit 1
+        fi
+    done
+
+    chain_name="$1"
     chain_dir="${CHAINS_DIR}/${chain_name}"
      
     ca_root_name="$1_root"
@@ -159,6 +168,8 @@ function makeChainDir() {
     mkdir -p "${chain_dir}"
     echo "${chain_dir}" >>"${CHAINS_FILE}"
     echo "${node_name}" > "${chain_dir}/.name"
+    # persist file
+    echo "" > "${chain_dir}/.material"
 }
 
 # create the directories where all the files of of the root CA will be generated
@@ -211,6 +222,12 @@ function makeConfigure() {
     # autodn
     sed -i -e "s+{{cn}}+$5+g" "${current_dir}/${AUTODN_CONF_NAME}"
     sed -i -e "s+{{name}}+$1+g" "${current_dir}/${AUTODN_CONF_NAME}"
+}
+
+# persist a file path inside the dedicated material file
+function persist() {
+    # persist
+    echo "$1" >> "${chain_dir}/.material"
 }
 
 function makeRoot() {
@@ -367,6 +384,8 @@ if [ "${arg_issuer}" == "None" ]; then
         issuer_dir="${chain_dir}/${ca_root_name}"
         makeConfigure "${ca_root_name}" "${CAROOT_EXTENSION}" "${issuer_dir}" "${ca_root_name}.crt" "${ca_root_name}"
         makeRoot
+        # persist certificate, thanks to the sourced environment
+        persist "ca_root=${certificate}"
     fi
     if [ "${arg_do_intermediate}" == "True" ]; then
         log_green "## MAKE INTERMEDIATE CA CERTS ##"
@@ -374,6 +393,7 @@ if [ "${arg_issuer}" == "None" ]; then
         issuer_dir="${chain_dir}/${ca_root_name}"
         makeConfigure "${ca_intermediate_name}" "${INTERMEDIATE_EXTENSION}" "${issuer_dir}" "ca_file.crt" "${ca_intermediate_name}"
         makeNode "${ca_intermediate_name}"
+        persist "ca_int=${certificate}"
     fi
 fi
 
@@ -384,10 +404,13 @@ if [ "${arg_do_node}" == "True" ]; then
     makeConfigure "${node_name}" "${arg_extension}" "${node_issuer_dir}" "ca_file.crt" "${arg_cn}"
     configureDNS "${node_issuer_dir}/${OPENSSL_CONF_NAME}"
     makeNode "${node_name}"
+    persist "certificate=${certificate}"
+    persist "private_key=${private_key}"
 fi
 
 log_green ". DONE !"
 echo ""
-echo "chain_dir: ${CHAINS_DIR}/${chain_name}"
+echo "name: ${chain_name}"
+echo "output: ${CHAINS_DIR}/${chain_name}"
 
 exit 0
