@@ -21,7 +21,7 @@ CHAINS_DIR = f"{EASYSSL_DIR}/build/chains"
 PLATFORMS_DIR = f"{EASYSSL_DIR}/build/platforms"
 PLATFORM_DIR = f"{PLATFORMS_DIR}/platform_{TIMESTAMP}"
 # scripts
-CERTS_SCRIPT = f"{COMMON_DIR}/easyssl_certs.sh"
+CERTS_SCRIPT = f"{COMMON_DIR}/easyssl_chain.sh"
 STORE_SCRIPT = f"{COMMON_DIR}/easyssl_store.sh"
 UTILITY_SCRIPT = f"{COMMON_DIR}/utils/certs_utils.sh"
 # resources locations

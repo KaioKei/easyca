@@ -8,7 +8,7 @@ from common.utils.platform_utils import execute
 from common.easyssl_platform import launch
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-CERTS_SCRIPT = f"{CURRENT_DIR}/common/easyssl_certs.sh"
+CERTS_SCRIPT = f"{CURRENT_DIR}/common/easyssl_chain.sh"
 STORE_SCRIPT = f"{CURRENT_DIR}/common/easyssl_store.sh"
 
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     if check_param(args[0], ["h", "help", "-h", "--help"]):
         usage()
-    elif check_param(args[0], ["cert"]):
+    elif check_param(args[0], ["chain"]):
         certs_args: List[str] = [CERTS_SCRIPT] + args[1:]
         execute(certs_args, stream_stdout=True)
     elif check_param(args[0], ["store"]):
