@@ -58,7 +58,7 @@ usage() {
     # shellcheck disable=SC2059
     printf "${blu}Overview :${end}
 
-  This script creates a CA with root, an intermediate CA and nodes certificates.
+  This script creates a chain with a CA root, an intermediate CA and nodes TLS certificates and private keys.
   Every certificate is signed by the same generated intermediate CA.
   All of the nodes certificates share the same hostname information : 'localhost' by default
   You can override the hostname of the certificates with : '--hostname [hostname]'.
@@ -90,15 +90,15 @@ usage() {
 
   ${blu}Examples :${end}
   # Create certs for server-side and client-side purpose:
-  ./easyssl.sh --super
+  chain --super
 
   # Create an intermediate CA and generate server and client keys signed by this CA :
-  ./easyssl.sh --intermediate --name myCA
-  ./easyssl.sh --server --issuer /home/user/easyssl/chains/myCA/ca_intermediate
-  ./easyssl.sh --client --issuer /home/user/easyssl/chains/myCA/ca_intermediate
+  chain --intermediate --name myCA
+  chain --server --issuer /home/user/easyssl/chains/myCA/ca_intermediate
+  chain --client --issuer /home/user/easyssl/chains/myCA/ca_intermediate
 
   # Add SAN to the generated certificate :
-  ./easyssl.sh --server --san 192.168.0.1,server1
+  chain --server --san 192.168.0.1,server1
   "
 }
 

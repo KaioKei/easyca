@@ -22,7 +22,6 @@ function log_green() {
 
 # Remove all dirs referenced inside the file .chains
 function purgeDirs() {
-    log_red "## REMOVE CHAINS ##"
     # purge chains
     # shellcheck disable=SC2153
     if [ -f "${CHAINS_FILE}" ]; then

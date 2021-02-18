@@ -18,15 +18,15 @@ TIMESTAMP = calendar.timegm(time.gmtime())
 COMMON_DIR = os.path.dirname(os.path.realpath(__file__))
 EASYSSL_DIR = os.path.dirname(COMMON_DIR)
 CHAINS_DIR = f"{EASYSSL_DIR}/build/chains"
+STORES_DIR = f"{EASYSSL_DIR}/build/stores"
 PLATFORMS_DIR = f"{EASYSSL_DIR}/build/platforms"
-PLATFORM_DIR = f"{PLATFORMS_DIR}/platform_{TIMESTAMP}"
+
 # scripts
 CERTS_SCRIPT = f"{COMMON_DIR}/easyssl_chain.sh"
 STORE_SCRIPT = f"{COMMON_DIR}/easyssl_store.sh"
 UTILITY_SCRIPT = f"{COMMON_DIR}/utils/certs_utils.sh"
 # resources locations
-LOGFILE = f"{EASYSSL_DIR}/logs/platform_{TIMESTAMP}.log"
-TRUSTSTORE_LOCATION = f"{PLATFORM_DIR}/truststore.jks"
+
 # names
 CA_ALIAS = "ca"
 CA_ROOT_DIR_NAME = f"{CA_ALIAS}_root"
@@ -54,6 +54,9 @@ g_conf_hosts: List[Dict[str, str]]
 g_platform_servers: List[str]
 g_admin_servers: List[str]
 g_password: str
+g_platform_dir: str
+g_logfile: str
+g_truststore_location: str
 
 # globals
 g_ca_root_cert: str
@@ -89,7 +92,7 @@ def get_material(root_dir: str, name: str, material: Material):
 # PLATFORM GENERATION #
 def generate_ca_chain():
     ca_cmd: List[str] = [CERTS_SCRIPT, "--intermediate", "--name", CA_ALIAS]
-    execute(ca_cmd, LOGFILE)
+    execute(ca_cmd, g_logfile)
 
     # save ca certs
     ca_material = MaterialFactory.get_certificate_material()
@@ -111,14 +114,14 @@ def generate_ca_chain():
 def generate_truststore():
     import_ca_cmd: List[str] = [STORE_SCRIPT, "--import",
                                 "--cafile", g_ca_root_cert,
-                                "--store", TRUSTSTORE_LOCATION,
+                                "--store", g_truststore_location,
                                 "--pass", g_password]
-    execute(import_ca_cmd, LOGFILE)
+    execute(import_ca_cmd, g_logfile)
     import_ca_cmd: List[str] = [STORE_SCRIPT, "--import",
                                 "--cafile", g_ca_intermediate_cert,
-                                "--store", TRUSTSTORE_LOCATION,
+                                "--store", g_truststore_location,
                                 "--pass", g_password]
-    execute(import_ca_cmd, LOGFILE)
+    execute(import_ca_cmd, g_logfile)
 
 
 def generate_certs_chains():
@@ -139,7 +142,7 @@ def generate_certs_chains():
             if cn is not None:
                 create_certs_cmd = create_certs_cmd + ["--cn", cn]
 
-            execute(create_certs_cmd, LOGFILE)
+            execute(create_certs_cmd, g_logfile)
 
             # save certs locations in global dictionary for further usage (import in truststore, extraction)
             chain_dir: str = f"{CHAINS_DIR}/{user}"
@@ -155,28 +158,23 @@ def generate_keystores():
     keystore_material = MaterialFactory.get_keystore_material()
     for hostname, host_section in g_material_locations.items():
         for username, user_section in host_section.items():
-            keystore_parent_dir: str = f"{user_section.get(LOCATION_KEY)}/{username}/{keystore_material.parent_dir}"
             # create keystore
             generate_keystore_cmd: List[str] = [STORE_SCRIPT, "--create",
                                                 "--key", user_section.get(KEY_KEY),
                                                 "--cert", user_section.get(CERT_KEY),
-                                                "--intermediate", g_ca_intermediate_cert,
-                                                "--output", keystore_parent_dir,
                                                 "--pass", g_password]
-            execute(generate_keystore_cmd, LOGFILE)
+            execute(generate_keystore_cmd, g_logfile)
             # save keystore location
-            keystore_location: str = f"{keystore_parent_dir}/{username}-keystore.{keystore_material.file_type}"
+            keystore_location: str = f"{STORES_DIR}/{username}/{username}-keystore.{keystore_material.file_type}"
             g_material_locations[hostname][username][KEYSTORE_KEY] = keystore_location
 
 
 def extract():
-    print()
-    print(g_material_locations)
     # copy ca in platform common dir
-    shutil.copy(g_ca_intermediate_file, f"{PLATFORM_DIR}")
+    shutil.copy(g_ca_intermediate_file, f"{g_platform_dir}")
     for hostname, host_section in g_material_locations.items():
         # create host folder
-        folder_path = Path(f"{PLATFORM_DIR}/{hostname}")
+        folder_path = Path(f"{g_platform_dir}/{hostname}")
         if not folder_path.exists():
             folder_path.mkdir(parents=True)
         # copy each TLS material inside the dedicated host folder
@@ -187,25 +185,42 @@ def extract():
 
 
 # MAIN #
-def purge():
-    print(". Purge platforms :")
-    for root, dirs, files in os.walk(PLATFORMS_DIR):
-        for platform in dirs:
-            print(f".    {platform}")
-            shutil.rmtree(f"{root}/{platform}")
-    print(". Done")
+def purge_platforms():
+    # remove platform dirs
+    for platform in os.listdir(PLATFORMS_DIR):
+        print(f". Removed {PLATFORMS_DIR}/{platform}")
+        shutil.rmtree(f"{PLATFORMS_DIR}/{platform}")
+            
+
+def list_platforms():
+    return os.listdir(PLATFORMS_DIR)
 
 
-def init():
-    Path(LOGFILE).parent.mkdir(parents=True, exist_ok=True)
-    with open(LOGFILE, 'w') as logfile:
-        logfile.write("")
-    print(". Initialize platform dir ..", end=' ')
-    Path(PLATFORM_DIR).mkdir(parents=True)
+def init(platform_name: str):
+    # build platform name
+    global g_platform_dir
+    g_platform_dir = f"{PLATFORMS_DIR}/{platform_name}" if platform_name is not None \
+        else f"{PLATFORMS_DIR}/platform_{TIMESTAMP}"
+
+    # check if platform already exists
+    if platform_name in list_platforms():
+        print(f"! FATAL: platform '{platform_name}' already exists")
+        sys.exit(1)
+
+    # create platform dir
+    print(". Initialize platform ..", end=' ')
+    Path(g_platform_dir).mkdir(parents=True)
     print("OK")
-    # this file will contain the chain names concerned by this platform
-    with open(LOGFILE, 'w') as logfile:
+
+    # create logfile
+    global g_logfile
+    g_logfile = f"{g_platform_dir}/{platform_name}.log"
+    with open(g_logfile, 'w') as logfile:
         logfile.write("")
+
+    # build truststore path
+    global g_truststore_location
+    g_truststore_location = f"{g_platform_dir}/truststore.jks"
 
 
 def load_configuration(configuration_file: str):
@@ -223,21 +238,31 @@ def load_configuration(configuration_file: str):
 
 def launch(arguments: List[str]):
     # parsing
-    parser = argparse.ArgumentParser(description='Generate TLS materials for a list of hosts. TLS material = private '
-                                                 'key, public key, CA file, keystore and truststore. The truststore and'
-                                                 ' the CA file are common to the entire platform while each private key'
-                                                 ', certificate and keystore are dedicated to one single server.')
-    parser.add_argument('--conf', dest='configuration', action='store',
+    description: str = "Create any TLS material your need for your platform servers.\n" \
+                       "Configure hosts, IPs user names in one YAML configuration file\n" \
+                       "The TLS material (CAs, private keys, certificates, keystores and truststores) will be created" \
+                       "inside one dedicated directory as output.\n" \
+                       "Check a configuration example in easyssl/resources/conf/platform_conf_example.yml\n" \
+                       "List platforms with '--list'"
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('-c', '--conf', dest='configuration', action='store',
                         help='Platform configuration file. Check "conf/platform_conf_example.yml"')
-    parser.add_argument('--purge', dest='purge_platforms', action='store_true',
+    parser.add_argument('-n', '--name', dest='platform_name', action='store',
+                        help=f"Platform output name")
+    parser.add_argument('-p', '--purge', dest='purge_platforms', action='store_true',
                         help=f"Remove all platforms dir in {PLATFORMS_DIR}")
+    parser.add_argument('-l', '--list', dest='list_platforms', action='store_true',
+                        help=f"List all platforms in {PLATFORMS_DIR}")
     args = parser.parse_args(arguments)
 
     if args.purge_platforms:
-        purge()
+        purge_platforms()
+    elif args.list_platforms:
+        for p in list_platforms():
+            print(f"{p}")
     else:
         load_configuration(args.configuration)
-        init()
+        init(args.platform_name)
 
         print_state(". Initialize CA ..")
         generate_ca_chain()
@@ -255,4 +280,5 @@ def launch(arguments: List[str]):
         extract()
         print("OK")
 
-        print(f". Done : {PLATFORM_DIR}")
+        print(f". Done.")
+        print(f"\noutput: {g_platform_dir}")

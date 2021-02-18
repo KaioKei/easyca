@@ -3,10 +3,10 @@ platform:
   hosts:
     - hostname: server1 # affects filename, SAN and CN
       ip: 172.28.128.21 # affects SAN
-    - users: ["admin"] # Affects filenames and CN
+    - users: ["bob"] # Affects filenames and CN
       hostname: server2 # affects SAN
       ip: 172.28.128.22 # affects SAN
     - cn: server2 # affects CN
-      users: ["admin-1", "admin-2"] # Affects filenames
+      users: ["admin", "bob"] # Affects filenames
       hostname: server3 # affects SAN
       ip: 172.28.128.22 # affects SAN

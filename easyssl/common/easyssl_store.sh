@@ -41,16 +41,16 @@ source "${COMMON_DIR}/utils/store_utils.sh"
 
 # === FUNCTIONS ===
 function log_red() {
-  printf "${red}%s${end}\n" "$1"
+    printf "${red}%s${end}\n" "$1"
 }
 
 function log_green() {
-  printf "${grn}%s${end}\n" "$1"
+    printf "${grn}%s${end}\n" "$1"
 }
 
 function usage() {
-  # shellcheck disable=SC2059
-  printf "${blu}Overview :${end}
+    # shellcheck disable=SC2059
+    printf "${blu}Overview :${end}
 
   With this script you may create or manage your keystore.
   Create a keystore and a truststore from:
@@ -98,50 +98,50 @@ function usage() {
 
 # if no argument '--alias' was given, set alias according to the cert if provided, or to the ca file if provided
 function set_alias() {
-  if [ "${arg_alias}" == "None" ]; then
-    if [ "${arg_cert}" != "None" ]; then
-      cert_filename=$(basename -- "${arg_cert}")
-      alias_cert="${cert_filename%.*}"
-      alias_ca="ca-${alias_cert}"
-    elif [ "${arg_ca_file}" != "None" ]; then
-      ca_filename=$(basename -- "${arg_ca_file}")
-      alias_ca="${ca_filename%.*}"
+    if [ "${arg_alias}" == "None" ]; then
+        if [ "${arg_cert}" != "None" ]; then
+            cert_filename=$(basename -- "${arg_cert}")
+            alias_cert="${cert_filename%.*}"
+            alias_ca="ca-${alias_cert}"
+        elif [ "${arg_ca_file}" != "None" ]; then
+            ca_filename=$(basename -- "${arg_ca_file}")
+            alias_ca="${ca_filename%.*}"
+        fi
+    else
+        alias_cert="${arg_alias}"
+        alias_ca="ca-${arg_alias}"
     fi
-  else
-    alias_cert="${arg_alias}"
-    alias_ca="ca-${arg_alias}"
-  fi
 }
 
 function set_password() {
-  if [ "${arg_pass}" != "None" ]; then
-    password="${arg_pass}"
-  else
-    log_red "! FATAL: You must provide option '--pass'. Use 'store -h' to check options."
-    exit 1
-  fi
+    if [ "${arg_pass}" != "None" ]; then
+        password="${arg_pass}"
+    else
+        log_red "! FATAL: You must provide option '--pass'. Use 'store -h' to check options."
+        exit 1
+    fi
 }
 
 function make_output() {
-  output_dir="${BUILD_STORES_DIR}/${alias_cert}"
-  if [ -d "${output_dir}" ]; then
-    log_red "! FATAL: already created '${alias_cert}' stores. Use '--alias'"
-    exit 1
-  else
-    mkdir -p "${output_dir}"
-  fi
+    output_dir="${BUILD_STORES_DIR}/${alias_cert}"
+    if [ -d "${output_dir}" ]; then
+        log_red "! FATAL: already created '${alias_cert}' stores. Use '--alias'"
+        exit 1
+    else
+        mkdir -p "${output_dir}"
+    fi
 }
 
 function load_chain_material() {
-  chain_dir="${EASYSSL_DIR}/build/chains/${arg_chain_name}"
-  if [ -d "${chain_dir}" ]; then
-    # shellcheck source=src/util.sh
-    source "${chain_dir}/.material"
+    chain_dir="${EASYSSL_DIR}/build/chains/${arg_chain_name}"
+    if [ -d "${chain_dir}" ]; then
+        # shellcheck source=src/util.sh
+        source "${chain_dir}/.material"
 
-  else
-    log_red "! FATAL: no chain named ${arg_chain_name}"
-    exit 1
-  fi
+    else
+        log_red "! FATAL: no chain named ${arg_chain_name}"
+        exit 1
+    fi
 }
 
 # Import a CA cert inside a store
@@ -150,8 +150,8 @@ function load_chain_material() {
 # arg3: alias of the cert
 # arg4: password of the store
 function import_ca() {
-  yes | keytool -import -trustcacerts -file "$1" -keystore "$2" -storetype jks -storepass "$4" -alias "$3" >/dev/null 2>&1
-  printf ". CA %s imported in %s as %s\n" "$(basename -- "$1")" "$(basename -- "$2")" "$3"
+    yes | keytool -import -trustcacerts -file "$1" -keystore "$2" -storetype jks -storepass "$4" -alias "$3" >/dev/null 2>&1
+    printf ". CA %s imported in %s as %s\n" "$(basename -- "$1")" "$(basename -- "$2")" "$3"
 }
 
 # Import a cert inside a store
@@ -160,95 +160,95 @@ function import_ca() {
 # arg3: alias of the cert
 # arg4: password of the store
 function import_cert() {
-  yes | keytool -import -file "$1" -keystore "$2" -storetype jks -storepass "$4" -alias "$3" >/dev/null 2>&1
-  printf ". File %s imported in %s as %s\n" "$(basename -- "$1")" "$(basename -- "$2")" "$3"
+    yes | keytool -import -file "$1" -keystore "$2" -storetype jks -storepass "$4" -alias "$3" >/dev/null 2>&1
+    printf ". File %s imported in %s as %s\n" "$(basename -- "$1")" "$(basename -- "$2")" "$3"
 }
 
-function keystore() {
-  echo ". Create keystore"
-  keystore_p12="${output_dir}/${alias_cert}-${KEYSTORE_P12_NAME}"
-  keystore_jks="${output_dir}/${alias_cert}-${KEYSTORE_JKS_NAME}"
-  openssl pkcs12 -export -in "${arg_cert}" -inkey "${arg_key}" -name "${alias_cert}" -passout pass:${password} -out "${keystore_p12}"
-  # create java keystore
-  keytool -importkeystore -srckeystore "${keystore_p12}" -srcstoretype pkcs12 -srcstorepass "${password}" -destkeystore "${keystore_jks}" -deststoretype jks -deststorepass "${password}" >/dev/null 2>&1
+function create_keystore() {
+    echo ". Create keystore"
+    keystore_p12="${output_dir}/${alias_cert}-${KEYSTORE_P12_NAME}"
+    keystore_jks="${output_dir}/${alias_cert}-${KEYSTORE_JKS_NAME}"
+    openssl pkcs12 -export -in "${arg_cert}" -inkey "${arg_key}" -name "${alias_cert}" -passout pass:${password} -out "${keystore_p12}"
+    # create java keystore
+    keytool -importkeystore -srckeystore "${keystore_p12}" -srcstoretype pkcs12 -srcstorepass "${password}" -destkeystore "${keystore_jks}" -deststoretype jks -deststorepass "${password}" >/dev/null 2>&1
 }
 
-function truststore() {
-  echo ". Create truststore"
-  truststore_jks="${output_dir}/${alias_cert}-${TRUSTSTORE_NAME}"
-  if [ "${arg_ca_file}" != "None" ]; then
-    import_ca "${arg_ca_file}" "${truststore_jks}" "${alias_ca}" "${password}"
-  fi
+function create_truststore() {
+    echo ". Create truststore"
+    truststore_jks="${output_dir}/${alias_cert}-${TRUSTSTORE_NAME}"
+    if [ "${arg_ca_file}" != "None" ]; then
+        import_ca "${arg_ca_file}" "${truststore_jks}" "${alias_ca}" "${password}"
+    fi
 }
 
 # === PARSING ===
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
-  key="$1"
-  case $key in
-  -h | --help)
-    usage
-    shift
-    exit 0
-    ;;
-  -P | --pass)
-    arg_pass="$2"
-    shift 2
-    ;;
-  -C | --create)
-    arg_mode="create"
-    shift
-    ;;
-  -I,--import)
-    arg_mode="import"
-    arg_cert="$2"
-    shift 2
-    ;;
-  -IC,-import-ca)
-    arg_mode="import_ca"
-    arg_ca_file="$2"
-    shift 2
-    ;;
+    key="$1"
+    case $key in
+    -h | --help)
+        usage
+        shift
+        exit 0
+        ;;
+    -P | --pass)
+        arg_pass="$2"
+        shift 2
+        ;;
+    -C | --create)
+        arg_mode="create"
+        shift
+        ;;
+    -I,--import)
+        arg_mode="import"
+        arg_cert="$2"
+        shift 2
+        ;;
+    -IC,-import-ca)
+        arg_mode="import_ca"
+        arg_ca_file="$2"
+        shift 2
+        ;;
 
-  -l | --list)
-    list_stores
-    exit 0
-    ;;
-  -p | --purge)
-    purge_stores
-    exit 0
-    ;;
+    -l | --list)
+        list_stores
+        exit 0
+        ;;
+    -p | --purge)
+        purge_stores
+        exit 0
+        ;;
 
-  --chain)
-    arg_chain_name="$2"
-    shift 2
-    ;;
-  -s | --store)
-    arg_store="$2"
-    shift 2
-    ;;
-  -c | --cert)
-    arg_cert="$2"
-    shift 2
-    ;;
-  -k | --key)
-    arg_key="$2"
-    shift 2
-    ;;
-  -ca | --cacert)
-    arg_ca_file="$2"
-    shift 2
-    ;;
-  -a | --alias)
-    arg_alias="$2"
-    shift 2
-    ;;
+    --chain)
+        arg_chain_name="$2"
+        shift 2
+        ;;
+    -s | --store)
+        arg_store="$2"
+        shift 2
+        ;;
+    -c | --cert)
+        arg_cert="$2"
+        shift 2
+        ;;
+    -k | --key)
+        arg_key="$2"
+        shift 2
+        ;;
+    -ca | --cacert)
+        arg_ca_file="$2"
+        shift 2
+        ;;
+    -a | --alias)
+        arg_alias="$2"
+        shift 2
+        ;;
     *) # unknown option
-    POSITIONAL+=("$1") # save it in an array for later
-    shift              # past argument
-    ;;
-  esac
+        POSITIONAL+=("$1") # save it in an array for later
+        shift              # past argument
+        ;;
+    esac
 done
 set -- "${POSITIONAL[@]}" # restore positional parameters
 
@@ -258,23 +258,26 @@ set_alias
 
 # create mode
 if [ "${arg_mode}" == "create" ]; then
-  make_output
+    make_output
 
-  log_green "### CREATE STORES ###"
-  keystore
-  truststore
+    if [ "${arg_cert}" != "None" ] && [ "${arg_key}" != "None" ]; then
+        create_keystore
+    fi
+    if [ "${arg_ca_file}" != "None" ]; then
+        create_truststore
+    fi
 
-  echo ""
-  echo "output: ${output_dir}"
-  echo "${output_dir}" >>"${BUILD_STORES_DIR}/.stores"
-  echo "${alias_cert}" >"${output_dir}/.name"
+    echo ""
+    echo "output: ${output_dir}"
+    echo "${output_dir}" >>"${BUILD_STORES_DIR}/.stores"
+    echo "${alias_cert}" >"${output_dir}/.name"
 # import mode
 elif [ "${arg_mode}" == "import" ]; then
-  import_cert "${arg_cert}" "${arg_store}" "${alias_cert}" "${password}"
-  echo "output: ${arg_store}"
+    import_cert "${arg_cert}" "${arg_store}" "${alias_cert}" "${password}"
+    echo "output: ${arg_store}"
 elif [ "${arg_mode}" == "import_ca" ]; then
-  import_ca "${arg_ca_file}" "${arg_store}" "${alias_ca}" "${password}"
-  echo "output: ${arg_store}"
+    import_ca "${arg_ca_file}" "${arg_store}" "${alias_ca}" "${password}"
+    echo "output: ${arg_store}"
 fi
 
-echo ""
+exit 0
