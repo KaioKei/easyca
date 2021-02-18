@@ -86,26 +86,14 @@ def get_material(root_dir: str, name: str, material: Material):
     return f"{root_dir}/{name}/{material.parent_dir}/{name}.{material.file_type}"
 
 
-def get_admin_name(basename: str):
-    return f"{ADMIN_ALIAS}-{basename}"
-
-
-def get_chain_path(exec_output: str):
-    """
-    :param exec_output: the output string of the launched process to generate a certs chain
-    :return: the chain dir absolute path that the process has generated
-    """
-    return f"{exec_output.split(EXEC_CHAIN_OUTPUT)[1]}".strip('\n')
-
-
 # PLATFORM GENERATION #
 def generate_ca_chain():
     ca_cmd: List[str] = [CERTS_SCRIPT, "--intermediate", "--name", CA_ALIAS]
-    output: List[int, str] = execute(ca_cmd, LOGFILE)
+    execute(ca_cmd, LOGFILE)
 
     # save ca certs
     ca_material = MaterialFactory.get_certificate_material()
-    ca_chain_dir = get_chain_path(str(output[1]))
+    ca_chain_dir = f"{CHAINS_DIR}/{CA_ALIAS}"
     # root
     global g_ca_root_cert
     g_ca_root_cert = \
@@ -151,10 +139,10 @@ def generate_certs_chains():
             if cn is not None:
                 create_certs_cmd = create_certs_cmd + ["--cn", cn]
 
-            output: List[int, str] = execute(create_certs_cmd, LOGFILE)
+            execute(create_certs_cmd, LOGFILE)
 
             # save certs locations in global dictionary for further usage (import in truststore, extraction)
-            chain_dir: str = get_chain_path(str(output[1]))
+            chain_dir: str = f"{CHAINS_DIR}/{user}"
             cert_location: str = get_material(chain_dir, user, MaterialFactory.get_certificate_material())
             key_location: str = get_material(chain_dir, user, MaterialFactory.get_private_key_material())
             g_material_locations[hostname][user] = {}
@@ -209,7 +197,7 @@ def purge():
 
 
 def init():
-    # remove the previous logfile
+    Path(LOGFILE).parent.mkdir(parents=True, exist_ok=True)
     with open(LOGFILE, 'w') as logfile:
         logfile.write("")
     print(". Initialize platform dir ..", end=' ')

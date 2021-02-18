@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     if check_param(args[0], ["h", "help", "-h", "--help"]):
         usage()
-    elif check_param(args[0], ["certs"]):
+    elif check_param(args[0], ["cert"]):
         certs_args: List[str] = [CERTS_SCRIPT] + args[1:]
         execute(certs_args, stream_stdout=True)
     elif check_param(args[0], ["store"]):

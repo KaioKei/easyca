@@ -1,6 +1,7 @@
 import subprocess
 from typing import List
 
+
 CMD_TIMEOUT_SECONDS = 10
 
 
@@ -39,5 +40,4 @@ def execute(command: List[str], logfile: str = None, user_input: str = None, str
     if logfile is not None:
         stdout_file.close()
 
-    # return [int(p.returncode), str(output)]
-    # return [0, "dumb"]
+    return int(process.returncode)
