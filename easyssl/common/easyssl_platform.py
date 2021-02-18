@@ -239,12 +239,12 @@ def load_configuration(configuration_file: str):
 def launch(arguments: List[str]):
     # parsing
     description: str = "Create any TLS material your need for your platform servers.\n" \
-                       "Configure hosts, IPs user names in one YAML configuration file\n" \
+                       "Configure hosts, IPs and user names in one YAML configuration file\n" \
                        "The TLS material (CAs, private keys, certificates, keystores and truststores) will be created" \
-                       "inside one dedicated directory as output.\n" \
+                       " inside one dedicated directory as output.\n" \
                        "Check a configuration example in easyssl/resources/conf/platform_conf_example.yml\n" \
                        "List platforms with '--list'"
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-c', '--conf', dest='configuration', action='store',
                         help='Platform configuration file. Check "conf/platform_conf_example.yml"')
     parser.add_argument('-n', '--name', dest='platform_name', action='store',

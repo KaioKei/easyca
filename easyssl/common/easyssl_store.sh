@@ -52,17 +52,9 @@ function usage() {
     # shellcheck disable=SC2059
     printf "${blu}Overview :${end}
 
-  With this script you may create or manage your keystore.
-  Create a keystore and a truststore from:
-  \t- provided keys
-  \t- created chains (check 'easyssl cert --list')
+  Create or manage your keystores and trusustores.
+  Create a keystore and a truststore from existing private key and certificate.
   Import existing keys into existing stores.
-  The created stores are built in a dedicated folder. List them with '--list'.
-
-
-  ${blu}Requirements:${end}
-  - Java >= 8
-  - Openssl = 1.1.1
 
   ${blu}Usage :${end}
   store [mode] [options] | [utils]
@@ -87,6 +79,12 @@ function usage() {
   ${blu}Examples :${end}
   # Create a truststore and a keystore :
   store --create --key server.p8 --cert server.crt --cafile ca.crt --pass secret
+
+    # Create a keystore :
+  store --create --key server.p8 --cert server.crt --pass secret
+
+    # Create a truststore :
+  store --create --cafile ca.crt --pass secret
 
   # Import a certificate inside a keystore :
   store --import server.crt --store keystore.jks --pass secret

@@ -84,7 +84,8 @@ usage() {
   --super [number]\tGenerate both server-side and client-side certs with CA
 
   ${grn}[ options ]${end}
-  --name [name]\t\tChange filenames and the common name (CN).
+  --name [name]\t\tChange the filenames and the certificate common name (CN)
+  --cn [name]\t\tChange the certificate common name (CN) (override the --name value)
   --san [host,ip..]\tAdd Subject Alternative Names for the generated certs. Default is 'localhost'. Eg: '--san 192.168.0.1,server1'
   --issuer [folder]\tGenerate certs using the provided CA. The folder MUST contain an openssl configuration file and a 'certs' folder containing the CA certificate. The path MUST be absolute.
 
@@ -98,7 +99,11 @@ usage() {
   chain --client --issuer /home/user/easyssl/chains/myCA/ca_intermediate
 
   # Add SAN to the generated certificate :
-  chain --server --san 192.168.0.1,server1
+  chain --server --san 192.168.0.1,
+
+  # Extract the useful TLS material (private key, certificate and CA file) of all chain inside structured directories
+  # The directory output structure respects the chain names
+  chain --extract /tmp/chains
   "
 }
 
