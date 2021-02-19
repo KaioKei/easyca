@@ -6,6 +6,8 @@ Create in one short command :
 * `chain` of certificates for a single host
 * `store` from certificates
 
+![](demo_110.gif)
+
 ## Getting started
 
 ```sh
