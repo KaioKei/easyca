@@ -41,8 +41,6 @@ function subject(){
 }
 
 function extract(){
-  log_green "## EXTRACT CERTIFICATES ##"
-
   if [[ $HEADER = '/*'* ]]; then
     log_red "! FATAL: you must provide absolute path. Try '--help'."
     exit 1
@@ -57,12 +55,12 @@ function extract(){
     chain_extract_dir="${extract_dir}/${chain_name}"
     # create chain dir
     mkdir -p "${chain_extract_dir}"
-    cp "${chain_source_dir}/${chain_name}/certs/"*.crt "${chain_extract_dir}"
-    cp "${chain_source_dir}/${chain_name}/private/"*.p8 "${chain_extract_dir}"
+    cp "${chain_source_dir}/${chain_name}/certs/"*.crt "${chain_extract_dir}" >> /dev/null 2>&1
+    cp "${chain_source_dir}/${chain_name}/private/"*.p8 "${chain_extract_dir}" >> /dev/null 2>&1
   done
 
   echo ""
-  tree "${extract_dir}" -L 1
+  echo "output: ${extract_dir}"
 }
 
 # add one or multiple certificates to trust inside a ca file

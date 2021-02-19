@@ -187,13 +187,13 @@ def extract():
 # MAIN #
 def purge_platforms():
     # remove platform dirs
-    for platform in os.listdir(PLATFORMS_DIR):
+    for platform in list_platforms():
         print(f". Removed {PLATFORMS_DIR}/{platform}")
         shutil.rmtree(f"{PLATFORMS_DIR}/{platform}")
             
 
 def list_platforms():
-    return os.listdir(PLATFORMS_DIR)
+    return os.listdir(PLATFORMS_DIR) if Path(PLATFORMS_DIR).exists() else []
 
 
 def init(platform_name: str):
