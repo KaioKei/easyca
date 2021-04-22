@@ -198,12 +198,12 @@ while [[ $# -gt 0 ]]; do
         arg_mode="create"
         shift
         ;;
-    -I,--import)
+    -I|--import)
         arg_mode="import"
         arg_cert="$2"
         shift 2
         ;;
-    -IC,-import-ca)
+    -IC|--import-ca)
         arg_mode="import_ca"
         arg_ca_file="$2"
         shift 2

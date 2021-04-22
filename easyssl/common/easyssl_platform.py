@@ -112,13 +112,11 @@ def generate_ca_chain():
 
 
 def generate_truststore():
-    import_ca_cmd: List[str] = [STORE_SCRIPT, "--import",
-                                "--cafile", g_ca_root_cert,
+    import_ca_cmd: List[str] = [STORE_SCRIPT, "--import-ca", g_ca_root_cert,
                                 "--store", g_truststore_location,
                                 "--pass", g_password]
     execute(import_ca_cmd, g_logfile)
-    import_ca_cmd: List[str] = [STORE_SCRIPT, "--import",
-                                "--cafile", g_ca_intermediate_cert,
+    import_ca_cmd: List[str] = [STORE_SCRIPT, "--import-ca", g_ca_intermediate_cert,
                                 "--store", g_truststore_location,
                                 "--pass", g_password]
     execute(import_ca_cmd, g_logfile)
@@ -171,6 +169,7 @@ def generate_keystores():
 
 def extract():
     # copy ca in platform common dir
+    # truststore is already present !
     shutil.copy(g_ca_intermediate_file, f"{g_platform_dir}")
     for hostname, host_section in g_material_locations.items():
         # create host folder
