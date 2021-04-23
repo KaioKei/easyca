@@ -37,6 +37,7 @@ CHAINS_SUFFIX_REGEX = "_[0-9]{10}"
 EXEC_CHAIN_OUTPUT = "chain_dir: "
 # settings
 LOCATION_KEY = "location"
+NAME_KEY="name"
 CERT_KEY = "cert"
 KEY_KEY = "key"
 KEYSTORE_KEY = "keystore"
@@ -133,8 +134,10 @@ def generate_certs_chains():
         global g_material_locations
         g_material_locations[hostname] = {}
         for user in users:
+            # if a user is located on multiple servers, we have to prefix user with host for chain name
+            chain_name = f"{hostname}-{user}" if CONF_USERS in host_conf else hostname
             create_certs_cmd: List[str] = [CERTS_SCRIPT, "--super",
-                                           "--name", user,
+                                           "--name", chain_name,
                                            "--issuer", g_ca_intermediate_dir,
                                            "--san", san]
             if cn is not None:
@@ -143,11 +146,11 @@ def generate_certs_chains():
             execute(create_certs_cmd, g_logfile)
 
             # save certs locations in global dictionary for further usage (import in truststore, extraction)
-            chain_dir: str = f"{CHAINS_DIR}/{user}"
-            cert_location: str = get_material(chain_dir, user, MaterialFactory.get_certificate_material())
-            key_location: str = get_material(chain_dir, user, MaterialFactory.get_private_key_material())
+            chain_dir: str = f"{CHAINS_DIR}/{chain_name}"
+            cert_location: str = get_material(chain_dir, chain_name, MaterialFactory.get_certificate_material())
+            key_location: str = get_material(chain_dir, chain_name, MaterialFactory.get_private_key_material())
             g_material_locations[hostname][user] = {}
-            g_material_locations[hostname][user][LOCATION_KEY] = chain_dir
+            g_material_locations[hostname][user][NAME_KEY] = chain_name
             g_material_locations[hostname][user][KEY_KEY] = key_location
             g_material_locations[hostname][user][CERT_KEY] = cert_location
 
@@ -163,7 +166,9 @@ def generate_keystores():
                                                 "--pass", g_password]
             execute(generate_keystore_cmd, g_logfile)
             # save keystore location
-            keystore_location: str = f"{STORES_DIR}/{username}/{username}-keystore.{keystore_material.file_type}"
+            # the keystore name is the chain name !
+            chain_name: str = user_section.get(NAME_KEY)
+            keystore_location: str = f"{STORES_DIR}/{chain_name}/{chain_name}-keystore.{keystore_material.file_type}"
             g_material_locations[hostname][username][KEYSTORE_KEY] = keystore_location
 
 
