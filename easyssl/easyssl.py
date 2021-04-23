@@ -10,6 +10,7 @@ from common.easyssl_platform import launch
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 CERTS_SCRIPT = f"{CURRENT_DIR}/common/easyssl_chain.sh"
 STORE_SCRIPT = f"{CURRENT_DIR}/common/easyssl_store.sh"
+UTIL_SCRIPT = f"{CURRENT_DIR}/common/easyssl_util.sh"
 
 
 def usage():
@@ -57,6 +58,9 @@ if __name__ == "__main__":
     elif check_param(args[0], ["platform"]):
         platform_args: List[str] = args[1:]
         launch(platform_args)
+    elif check_param(args[0], ["util"]):
+        util_args: List[str] = [UTIL_SCRIPT] + args[1:]
+        execute(util_args, stream_stdout=True)
     else:
         print("! FATAL: Unknown command. Use 'easyssl --help'")
         sys.exit(1)

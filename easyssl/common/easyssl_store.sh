@@ -148,7 +148,7 @@ function load_chain_material() {
 # arg3: alias of the cert
 # arg4: password of the store
 function import_ca() {
-    yes | keytool -import -trustcacerts -file "$1" -keystore "$2" -storetype jks -storepass "$4" -alias "$3" >/dev/null 2>&1
+    yes | keytool -import -trustcacerts -file "$1" -keystore "$2" -storetype jks -storepass "$4" -alias "$3" > /dev/null 2>&1
     printf ". CA %s imported in %s as %s\n" "$(basename -- "$1")" "$(basename -- "$2")" "$3"
 }
 

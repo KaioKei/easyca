@@ -54,7 +54,7 @@ source "${UTILITY_SCRIPT}"
 
 # === USAGE ===
 
-usage() {
+function usage_chain() {
     # shellcheck disable=SC2059
     printf "${blu}Overview :${end}
 
@@ -114,6 +114,7 @@ usage() {
 function configureName() {
     # check if a chain has the same name
     names=$(list)
+    echo $names
     for name in ${names[*]}; do
         if [ "$1" == "${name}" ];then
             log_red "! FATAL: '$1' already exists"
@@ -293,7 +294,7 @@ while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
     -h | --help)
-        usage
+        usage_chain
         exit 0
         ;;
     --root)

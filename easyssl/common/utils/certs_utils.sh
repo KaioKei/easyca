@@ -12,6 +12,7 @@ end=$'\e[0m'
 TIME=$(date +%s)
 # === FUNCTIONS ===
 
+
 function log_red() {
     printf "${red}%s${end}\n" "$1"
 }
@@ -32,12 +33,6 @@ function purgeDirs() {
         done
         rm "${CHAINS_FILE}"
     fi
-}
-
-function subject(){
-  output=$(openssl x509 -subject -nameopt RFC2253 -noout -in "$1")
-  # only display what comes after '='
-  echo "${output#*=}"
 }
 
 function extract(){
@@ -92,3 +87,4 @@ function list(){
         done
     fi
 }
+
