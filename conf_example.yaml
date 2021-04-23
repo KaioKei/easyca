@@ -1,0 +1,14 @@
+platform:
+  password: "secret123"
+  hosts:
+    # server1 : filenames=<host>, CN=<hostname>, SAN=<DNS:host>
+    - hostname: server1 # MANDATORY
+    # server2 : filenames=<host>-<user>, CN=<host>-<user>, SAN=DNS:<host>,IP:<ip>
+    - hostname: server2
+      users: ["admin", "bob"]
+      ip: 192.168.50.12
+    # server3 : filenames=<host>-<user>, CN=<cn>, SAN=DNS:<host>,IP:<ip>
+    - hostname: server3
+      users: ["admin", "alice"]
+      ip: 192.168.50.13
+      cn: server3

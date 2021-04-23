@@ -2,9 +2,7 @@
 
 
 function util_usage(){
-  printf "utils:
-
-  Usage:
+  printf "Usage:
   [option] [cert]
 
   [options]
@@ -30,6 +28,10 @@ UTIL_POSITIONAL=()
 while [[ $# -gt 0 ]]; do
     util_key="$1"
     case $util_key in
+    --help | -h)
+        util_usage
+        exit 0
+        ;;
     --subject)
         subject "$2"
         exit $?

@@ -14,18 +14,19 @@ UTIL_SCRIPT = f"{CURRENT_DIR}/common/easyssl_util.sh"
 
 
 def usage():
-    print("\nEasySSL helps you to create :\n\n"
-          "Platforms: create all the TLS material you need for an entire platform and servers in one "
-          "configuration file !\n"
-          "Chains: create a complete chain of CAs, private keys and certificates in one short command line !\n"
-          "Stores: create a keystores and truststores in one short command line !\n"
+    print("Features :\n"
+          "easyssl platform     Create all the TLS material you need for an entire platform and servers in one configuration file !\n"
+          "easyssl chain        Create a complete chain of CAs, private keys and certificates in one short command line !\n"
+          "easyssl store        Create a keystores and truststores in one short command line !\n"
+          "easyssl util         Some useful tools for certificates\n" 
           "\n"
           "easyssl platform --help\n"
           "easyssl chain --help\n"
           "easyssl store --help\n"
+          "easyssl util --help\n"
           "\n"
-          "Further usage:\n"
-          "easyssl -p #Remove all platforms, chains and stores")
+          "Options:\n"
+          "easyssl -p       Remove all platforms, chains and stores")
 
 
 def check_param(argument: str, options: List[str]):
