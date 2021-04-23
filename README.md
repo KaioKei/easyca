@@ -30,9 +30,9 @@ easyssl -h
 ## Get started
 
 ```sh
-eayssl platform -h
-eayssl chain -h
-eayssl store -h
+easyssl platform -h
+easyssl chain -h
+easyssl store -h
 easyssl util -h
 ```
 
