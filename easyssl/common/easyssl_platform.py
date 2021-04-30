@@ -49,6 +49,7 @@ CONF_HOSTNAME = "hostname"
 CONF_IP = "ip"
 CONF_USERS = "users"
 CONF_CN = "cn"
+CONF_SAN = "san"
 
 # inputs
 g_conf_hosts: List[Dict[str, str]]
@@ -128,7 +129,7 @@ def generate_certs_chains():
         # if 'users' not configured, only generate a cert named after the hostname
         hostname = host_conf.get(CONF_HOSTNAME)
         users: List[str] = host_conf.get(CONF_USERS) if CONF_USERS in host_conf else [hostname]
-        san = f"{hostname},{host_conf.get(CONF_IP)}"
+        san = host_conf.get(CONF_SAN) if CONF_SAN in host_conf else f"{hostname},{host_conf.get(CONF_IP)}"
         cn = host_conf.get(CONF_CN)
         # init metadata
         global g_material_locations
