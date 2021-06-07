@@ -71,4 +71,5 @@ The TLS material is generated per host in `platform.hosts` and optionally per us
 | [host].ip | No | None | IPv4. The IP is used for the SAN of each certificate for this host. |
 | [host].users | No | None | List of names. For each name, additional keys and keystores are generated for this host. Each name is used for the file names=`hostname-user.extension`, and the CN=`hostname-user`. |
 | [host].cn | No | None | Overrides the CN of each generated certificate for this host |
+| [host].san | No | None | Overrides the SAN of each generated certificate for this host |
 

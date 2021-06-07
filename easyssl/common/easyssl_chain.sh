@@ -153,17 +153,17 @@ function configureDNS() {
     # uncomment subjectAltName settings in issuer config file
     sed -i -e "s+#subjectAltName = @alt_names+subjectAltName = @alt_names+g" "$1"
     IFS=',' read -ra ADDR <<<"${arg_san}"
-    san_placeholder="#{{more_san}}"
+    before_san_placeholder="#{{before_san}}"
     count_san_ip=1
     count_san_host=1
     for i in "${ADDR[@]}"; do
         if [[ $i =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
             # for ip address
-            sed -i "s+${san_placeholder}+IP\.${count_san_ip} = ${i}\n${san_placeholder}+g" "$1"
+            sed -i "s+${before_san_placeholder}+IP\.${count_san_ip} = ${i}\n${before_san_placeholder}+g" "$1"
             count_san_ip=$((count_san_ip + 1))
         else
             # for hostname
-            sed -i "s+${san_placeholder}+DNS\.${count_san_host} = ${i}\n${san_placeholder}+g" "$1"
+            sed -i "s+${before_san_placeholder}+DNS\.${count_san_host} = ${i}\n${before_san_placeholder}+g" "$1"
             count_san_host=$((count_san_host + 1))
         fi
     done

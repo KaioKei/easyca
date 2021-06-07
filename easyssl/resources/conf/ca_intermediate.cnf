@@ -133,4 +133,5 @@ extendedKeyUsage = serverAuth, clientAuth
 #subjectAltName = @alt_names
 
 [ alt_names ]
-#{{more_san}}
+#{{before_san}}
+#{{after_san}}
