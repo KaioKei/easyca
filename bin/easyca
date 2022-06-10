@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+source "/home/kaio/.cache/pypoetry/virtualenvs/easyca-CYnf3d86-py3.10/bin/activate"
+easyca "$@"

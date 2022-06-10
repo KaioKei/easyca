@@ -2,10 +2,10 @@
 .idea
 
 # build
-easyssl/build
-
-# logs
-easyssl/logs
+bin/
+dist/
+build/
+/.env
 
 # python
 **/__pycache__

@@ -5,7 +5,7 @@
 # than one openssl command.
 
 [ default ]
-ca                      = {{ca_name}}           # CA name
+ca                      = {{ca_name}}_root      # CA name
 dir                     = {{dir}}               # Top dir
 certs                   = $dir/certs            # certs dir
 private                 = $dir/private          # private keys dir

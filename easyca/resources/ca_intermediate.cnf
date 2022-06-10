@@ -5,10 +5,10 @@
 # than one openssl command.
 
 [ default ]
-ca                      = {{ca_name}}           # CA name
-dir                     = {{dir}}               # Top dir
-certs                   = $dir/certs            # certs dir
-private                 = $dir/private          # private keys dir
+ca                      = {{ca_name}}_intermediate  # CA name
+dir                     = {{dir}}                   # Top dir
+certs                   = $dir/certs                # certs dir
+private                 = $dir/private              # private keys dir
 
 # The remainder of the configuration file is used by the openssl ca command.
 # The CA section defines the locations of CA assets, as well as the policies
@@ -108,7 +108,7 @@ subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid, issuer:always
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = clientAuth
-#subjectAltName = @alt_names
+subjectAltName = @alt_names
 
 [ server_cert ]
 # Extensions for server certificates (`man x509v3_config`).
@@ -119,9 +119,9 @@ subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid, issuer:always
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth
-#subjectAltName = @alt_names
+subjectAltName = @alt_names
 
-[ super_cert ]
+[ node_cert ]
 # Extensions for server certificates (`man x509v3_config`).
 basicConstraints = critical,CA:FALSE
 nsCertType = server, client
@@ -130,7 +130,7 @@ subjectKeyIdentifier = hash
 #authorityKeyIdentifier = keyid, issuer:always
 keyUsage = critical, digitalSignature, keyEncipherment, nonRepudiation
 extendedKeyUsage = serverAuth, clientAuth
-#subjectAltName = @alt_names
+subjectAltName = @alt_names
 
 [ alt_names ]
 #{{before_san}}

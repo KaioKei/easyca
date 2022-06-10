@@ -1,20 +1,5 @@
-platform:
-  password: "secret123"
-  hosts:
-    # server1 : filenames=<hostname>, CN=<hostname>, SAN=<DNS:hostname>
-    - hostname: server1 # MANDATORY
-    # server2 : filenames=<hostname>-<user>, CN=<hostname>-<user>, SAN=DNS:<hostname>,IP:<ip>
-    - hostname: server2
-      users: ["admin", "bob"]
-      ip: 192.168.50.12
-    # server3 : filenames=<hostname>-<user>, CN=<cn>, SAN=DNS:<hostname>,IP:<ip>
-    - hostname: server3
-      users: ["admin", "alice"]
-      ip: 192.168.50.13
-      cn: server3
-    # server3 : filenames=<hostname>-<user>, CN=<cn>, SAN=DNS:server3,IP:192.168.50.13,DNS:server4,IP:192.168.50.14
-    - hostname: server4
-      users: ["admin", "alice"]
-      ip: 192.168.50.14
-      cn: server4
-      san: "server3,192.168.50.13,server4,192.168.50.14"
+version: "v2.0.0"
+certs:
+  - cn: "node01"
+  - cn: "node02"
+    san: "node02,192.168.122.1"
