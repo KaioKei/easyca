@@ -30,7 +30,7 @@ def ca(names: List[str] = typer.Option(None, "-n", "--names", help="CA names to 
 
 
 @app.command()
-def certs(ca_: str = typer.Option(..., "--ca", help="The CA name of the certificates to delete"),
+def certs(ca_: str = typer.Option(None, "--ca", help="The CA name of the certificates to delete"),
           names: List[str] = typer.Option(None, "-n", "--names", help="Certificates names to delete"),
           del_all: bool = typer.Option(False, "-a", "--all", help="Delete all CAs")):
     """
@@ -45,7 +45,7 @@ def certs(ca_: str = typer.Option(..., "--ca", help="The CA name of the certific
 
     logger.warning(f"The following certs will be removed: {names}")
     if yes_no_question("Are you sure ? (Y/n)[default: n]", False):
-        CAManager.delete_cas(names)
+        CAManager.delete_certs(ca_name, names)
         logger.info("OK")
     else:
         logger.info("Aborted")

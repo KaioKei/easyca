@@ -5,7 +5,7 @@ import typer
 from easyca.logger import EasyCALogger
 from easyca.workspace import WorkspaceLoader
 
-app = typer.Typer(help="Create CAs and certificates")
+app = typer.Typer(help="Change the CA to use")
 
 logger: logging.Logger = logging.getLogger(EasyCALogger.name)
 

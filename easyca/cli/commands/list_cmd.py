@@ -31,7 +31,7 @@ def certs(name: str = typer.Option(None, "--ca", help="Name of a CA to list its 
     logger.info(f"CA '{ca_name}' certs:")
     try:
         ca_certs: Dict = CAManager(ca_name).list_certs_names(exclude_ca=True)
-        print(f"CA: {ca_name}")
+        print(f"ca={ca_name}")
         for cn, certs_names in ca_certs.items():
             print(f"└── cn={cn}")
             for cert_name in certs_names:

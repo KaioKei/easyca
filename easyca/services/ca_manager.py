@@ -99,6 +99,12 @@ class CAManager(object):
             shutil.rmtree(os.path.join(WorkspaceLoader.get_workspace().get_path(), name))
 
     @staticmethod
+    def delete_certs(ca: str, names: List[str]):
+        for name in names:
+            logger.debug(f"Delete CA '{name}'")
+            shutil.rmtree(os.path.join(WorkspaceLoader.get_workspace().get_path(), ca, name))
+
+    @staticmethod
     def get_current() -> str:
         workspace = WorkspaceLoader.get_workspace()
         metadata = workspace.get_metadata()

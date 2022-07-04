@@ -57,14 +57,14 @@ def export(ca: str = typer.Option(None, "--ca", help="Name of a CA to export its
     logger.info("OK")
 
 
-@app.command()
-def check(ca: str = typer.Option(None, "--ca", help="Name of a CA to export its "
-                                                     "certificates")):
-    """
-    Export certificates to an output location
-    """
-    ca_name = ca if ca else CAManager.get_current()
-    CAManager(ca_name).check_ca()
+# @app.command()
+# def check(ca: str = typer.Option(None, "--ca", help="Name of a CA to export its "
+#                                                      "certificates")):
+#     """
+#     Export certificates to an output location
+#     """
+#     ca_name = ca if ca else CAManager.get_current()
+#     CAManager(ca_name).check_ca()
 
 
 def cli():
