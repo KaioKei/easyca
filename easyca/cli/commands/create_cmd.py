@@ -4,6 +4,7 @@ from pathlib import Path
 import typer
 
 from easyca.exceptions.ca_exceptions import CANotFound
+from easyca.exceptions.certificate_exception import CertificateExists
 from easyca.logger import EasyCALogger
 from easyca.services.ca_manager import CAManager
 

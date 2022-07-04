@@ -6,7 +6,8 @@ from typing import Dict, List, Optional
 
 from easyca.environment import EnvironmentLoader
 from easyca.exceptions.ca_exceptions import CANotFound, RootCANotFound, SigningCANotFound
-from easyca.exceptions.certificate_exception import CertificateNotFound, PrivateKeyNotFound
+from easyca.exceptions.certificate_exception import CertificateExists, CertificateNotFound, \
+    PrivateKeyNotFound
 from easyca.logger import EasyCALogger
 from easyca.models.configuration import Configuration, ConfigurationCertificate
 from easyca.utils.file_utils import list_dirs, list_files
@@ -71,16 +72,20 @@ class CAManager(object):
         logger.debug(f"Generate certificates")
         script = self.environment.get_scripts_dir() + "/certificates.sh"
         for cert in configuration.certs:
-            os.makedirs(self.ca_dir / cert.cn)
-            execute([script,
-                     "--name", self.name,
-                     "--dir", str(self.ca_dir / cert.cn),
-                     "--config", str(self.ca_node_config),
-                     "--issuer", str(self.ca_intermediate_dir),
-                     "--cn", str(cert.cn),
-                     "--san", str(cert.san),
-                     "--node"],
-                    stream_stdout=debug)
+            try:
+                os.makedirs(self.ca_dir / cert.cn)
+                logger.info(f"Create certificate cn={cert.cn}")
+                execute([script,
+                         "--name", self.name,
+                         "--dir", str(self.ca_dir / cert.cn),
+                         "--config", str(self.ca_node_config),
+                         "--issuer", str(self.ca_intermediate_dir),
+                         "--cn", str(cert.cn),
+                         "--san", str(cert.san),
+                         "--node"],
+                        stream_stdout=debug)
+            except FileExistsError:
+                logger.warning(f"Skip cn='{cert.cn}': certificate already exists")
 
     @staticmethod
     def list_cas() -> "List[Path]":
@@ -123,7 +128,7 @@ class CAManager(object):
             raise RootCANotFound
         self.check_certs("root")
         # check signing ca folder and certs
-        if not self.ca_root_dir.exists():
+        if not self.ca_intermediate_dir.exists():
             raise SigningCANotFound
         self.check_certs("intermediate")
 
@@ -131,10 +136,10 @@ class CAManager(object):
         """
         Check if the certificate and the private key exist for a given certificate name
         """
-        certs = self.list_certs_names(filter_certs=[name])
-        if name + "crt" not in certs.values():
+        certs = self.list_certs_names(filter_certs=[name]).get(name)
+        if f"{self.name}_{name}.crt" not in certs:
             raise CertificateNotFound
-        elif name + ".p8" not in certs.values():
+        elif f"{self.name}_{name}.p8" not in certs:
             raise PrivateKeyNotFound
 
     def list_certs(self, exclude_ca=False, filter_certs: Optional[List[str]] = None) -> "Dict":

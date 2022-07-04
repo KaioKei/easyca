@@ -15,3 +15,9 @@ class CertificateNotFound(CertificateException):
     def __init__(self, message: str = "Certificate not found", *args):
         self.message = message
         super().__init__(self.message, args)
+
+
+class CertificateExists(CertificateException):
+    def __init__(self, message: str = "Certificate already exists", *args):
+        self.message = message
+        super().__init__(self.message, args)
