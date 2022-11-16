@@ -1,0 +1,7 @@
+version: "v2.0.0"
+certs:
+  - cn: "node01"
+  - cn: "node02"
+    san: "node02,192.168.122.1"
+  - cn: "node03"
+    san: "louis,nicolas,192.168.122.2"

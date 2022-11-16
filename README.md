@@ -27,5 +27,5 @@ easyca export certs --output $HOME
 | Configuration | Mandatory | Type   | Default     | Description                                            |
 |---------------|-----------|--------|-------------|--------------------------------------------------------|
 | version       | Yes       | String | None        | easyca version                                         |
-| certs.cn      | Yes       | String | None        | Certificate CN value                                   |
-| certs.san     | No        | String | "127.0.0.1" | Certificate SAN value. Format is `"ip1,name1,ip2,ip3"` |
+| certs[].cn    | Yes       | String | None        | Certificate CN value                                   |
+| certs[].san   | No        | String | "127.0.0.1" | Certificate SAN value. Format is `"ip1,name1,ip2,ip3"` |
